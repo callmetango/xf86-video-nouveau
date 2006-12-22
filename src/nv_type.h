@@ -126,6 +126,7 @@ typedef struct {
 
 typedef struct _NVCrtcPrivateRec {
 	int crtc;
+        volatile CARD8 *pCRTCReg;
 } NVCrtcPrivateRec, *NVCrtcPrivatePtr;
 
 #define NVCrtcPrivate(c) ((NVCrtcPrivatePtr)(c)->driver_private)

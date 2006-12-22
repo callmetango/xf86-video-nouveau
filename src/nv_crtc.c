@@ -40,14 +40,52 @@
 #include "nv_include.h"
 
 
+#define CRTC_INDEX 0x3d4
+#define CRTC_DATA 0x3d5
+
+static void NVWriteCrtc(xf86CrtcPtr crtc, CARD8 index, CARD8 value)
+{
+  NVCrtcPrivatePtr nv_crtc = crtc->driver_private;
+
+  NV_WR08(nv_crtc->pCRTCReg, CRTC_INDEX, index);
+  NV_WR08(nv_crtc->pCRTCReg, CRTC_DATA, value);
+}
+
+static CARD8 NVReadCrtc(xf86CrtcPtr crtc, CARD8 index)
+{
+  NVCrtcPrivatePtr nv_crtc = crtc->driver_private;
+
+  NV_WR08(nv_crtc->pCRTCReg, CRTC_INDEX, index);
+  return NV_RD08(nv_crtc->pCRTCReg, CRTC_DATA);
+}
+
 static void
 nv_crtc_dpms(xf86CrtcPtr crtc, int mode)
 {
      ScrnInfoPtr pScrn = crtc->scrn;
      NVPtr pI830 = NVPTR(pScrn);
      NVCrtcPrivatePtr nv_crtc = crtc->driver_private;
+     unsigned char crtc1A;
+     vgaHWPtr hwp = VGAHWPTR(pScrn);
+     int ret;
 
-
+     crtc1A = NVReadCrtc(crtc, 0x1A) & ~0xC0;
+     switch(mode) {
+     case DPMSModeStandby:
+       crtc1A |= 0x80;
+       break;
+     case DPMSModeSuspend:
+       crtc1A |= 0x40;
+       break;
+     case DPMSModeOff:
+       crtc1A |= 0xC0;
+       break;
+     case DPMSModeOn:
+     default:
+       break;
+     }
+     
+     NVWriteCrtc(crtc, 0x1A, crtc1A);
 }
 
 static Bool
@@ -89,6 +127,7 @@ static const xf86CrtcFuncsRec nv_crtc_funcs = {
 void
 nv_crtc_init(ScrnInfoPtr pScrn, int crtc_num)
 {
+    NVPtr pNv = NVPTR(pScrn);
     xf86CrtcPtr crtc;
     NVCrtcPrivatePtr nv_crtc;
 
@@ -98,6 +137,11 @@ nv_crtc_init(ScrnInfoPtr pScrn, int crtc_num)
 
     nv_crtc = xnfcalloc (sizeof (NVCrtcPrivateRec), 1);
     nv_crtc->crtc = crtc_num;
+
+    if (crtc_num == 0)
+      nv_crtc->pCRTCReg = pNv->PCIO0;
+    else
+      nv_crtc->pCRTCReg = pNv->PCIO1;
 
     crtc->driver_private = nv_crtc;
 }

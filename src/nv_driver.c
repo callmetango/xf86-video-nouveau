@@ -2177,10 +2177,14 @@ NVScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 	ShadowFBInit(pScreen, refreshArea);
     }
 
+#if 1
+    xf86DPMSInit(pScreen, xf86DPMSSet, 0);
+#else
     if(pNv->FlatPanel)
        xf86DPMSInit(pScreen, NVDPMSSetLCD, 0);
     else
        xf86DPMSInit(pScreen, NVDPMSSet, 0);
+#endif
     
     pScrn->memPhysBase = pNv->VRAMPhysical;
     pScrn->fbOffset = 0;
