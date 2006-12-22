@@ -148,5 +148,8 @@ void NvSetupOutputs(ScrnInfoPtr pScrn)
     }
     
     output->driver_private = nv_output;
+
+    NV_I2CInit(pScrn, &nv_output->pDDCBus, i ? 0x36 : 0x3e, name);
+    
   }
 }

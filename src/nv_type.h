@@ -132,6 +132,7 @@ typedef struct _NVCrtcPrivateRec {
 
 typedef struct _NVOutputPrivateRec {
 	int type;
+        I2CBusPtr		    pDDCBus;
 } NVOutputPrivateRec, *NVOutputPrivatePtr;
 
 #define NVOutputPrivate(o) ((NVOutputPrivatePtr (o)->driver_private)
