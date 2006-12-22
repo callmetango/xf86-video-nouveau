@@ -70,6 +70,27 @@
 #define SetBit(n) (1<<(n))
 #define Set8Bits(value) ((value)&0xff)
 
+typedef enum
+{
+    OUTPUT_NONE,
+    OUTPUT_VGA,
+    OUTPUT_DVI,
+    OUTPUT_LVDS,
+    OUTPUT_STV,
+    OUTPUT_CTV,
+} NVOutputType;
+
+typedef enum
+{
+    MT_UNKNOWN = -1,
+    MT_NONE    = 0,
+    MT_CRT     = 1,
+    MT_LCD     = 2,
+    MT_DFP     = 3,
+    MT_CTV     = 4,
+    MT_STV     = 5
+} NVMonitorType;
+
 typedef struct {
     int bitsPerPixel;
     int depth;
@@ -132,8 +153,9 @@ typedef struct _NVCrtcPrivateRec {
 #define NVCrtcPrivate(c) ((NVCrtcPrivatePtr)(c)->driver_private)
 
 typedef struct _NVOutputPrivateRec {
-	int type;
         I2CBusPtr		    pDDCBus;
+        NVOutputType type;
+        NVMonitorType mon_type;
 } NVOutputPrivateRec, *NVOutputPrivatePtr;
 
 #define NVOutputPrivate(o) ((NVOutputPrivatePtr (o)->driver_private)

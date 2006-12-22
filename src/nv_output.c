@@ -41,6 +41,25 @@
 
 #define NV_MAX_OUTPUT 2
 
+const char *OutputType[] = {
+    "None",
+    "VGA",
+    "DVI",
+    "LVDS",
+    "S-video",
+    "Composite",
+};
+
+const char *MonTypeName[7] = {
+  "AUTO",
+  "NONE",
+  "CRT",
+  "LVDS",
+  "TMDS",
+  "CTV",
+  "STV"
+};
+
 
 static void
 nv_output_dpms(xf86OutputPtr output, int mode)
@@ -119,6 +138,12 @@ nv_output_get_modes(xf86OutputPtr output)
     xfree(output->MonInfo);
   output->MonInfo = ddc_mon;
 
+  /* check if a CRT or DFP */
+  if (ddc_mon->features.input_type)
+    nv_output->mon_type = MT_LCD;
+  else
+    nv_output->mon_type = MT_CRT;
+
 #ifdef RANDR_12_INTERFACE
   if (output->MonInfo->ver.version == 1) {
     nv_ddc_set_edid_property(output, ddc_mon->rawData, 128);
@@ -192,14 +217,13 @@ void NvSetupOutputs(ScrnInfoPtr pScrn)
   NVPtr pNv = NVPTR(pScrn);
   xf86OutputPtr	    output;
   NVOutputPrivatePtr    nv_output;
-  char *name[2] =  { "VGA0", "VGA1" };
+  char *ddc_name[2] =  { "DDC0", "DDC1" };
   int   crtc_mask = (1<<0) | (1<<1);
-
+  int output_type = OUTPUT_DVI;
   int num_outputs = pNv->twoHeads ? 2 : 1;
 
   for (i = 0; i<num_outputs; i++) {
-
-    output = xf86OutputCreate (pScrn, &nv_output_funcs, name[i]);
+    output = xf86OutputCreate (pScrn, &nv_output_funcs, OutputType[output_type]);
     if (!output)
 	return;
     nv_output = xnfcalloc (sizeof (NVOutputPrivateRec), 1);
@@ -210,8 +234,9 @@ void NvSetupOutputs(ScrnInfoPtr pScrn)
     }
     
     output->driver_private = nv_output;
+    nv_output->type = output_type;
 
-    NV_I2CInit(pScrn, &nv_output->pDDCBus, i ? 0x36 : 0x3e, name[i]);
+    NV_I2CInit(pScrn, &nv_output->pDDCBus, i ? 0x36 : 0x3e, ddc_name[i]);
     
     output->possible_crtcs = crtc_mask;
   }
