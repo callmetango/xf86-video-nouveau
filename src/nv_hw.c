@@ -1022,6 +1022,3 @@ void NVInitGraphContext(ScrnInfoPtr pScrn, RIVA_HW_STATE *state)
     /* end of clipping values */
 
 }
-
-
-

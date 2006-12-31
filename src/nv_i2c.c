@@ -52,7 +52,7 @@ NV_I2CInit(ScrnInfoPtr pScrn, I2CBusPtr *bus_ptr, int i2c_reg, char *name)
     if(!pI2CBus)
       return FALSE;
 
-    pI2CBus->BusName    = name;;
+    pI2CBus->BusName    = name;
     pI2CBus->scrnIndex  = pScrn->scrnIndex;
     pI2CBus->I2CPutBits = NVI2CPutBits;
     pI2CBus->I2CGetBits = NVI2CGetBits;
