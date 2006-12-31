@@ -172,6 +172,10 @@ typedef struct _NVOutputPrivateRec {
         I2CBusPtr		    pDDCBus;
         NVOutputType type;
         NVMonitorType mon_type;
+        CARD32 fpSyncs;
+        CARD32 fpWidth;
+        CARD32 fpHeight;
+        Bool fpdither;
 } NVOutputPrivateRec, *NVOutputPrivatePtr;
 
 #define NVOutputPrivate(o) ((NVOutputPrivatePtr (o)->driver_private)

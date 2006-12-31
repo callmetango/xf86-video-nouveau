@@ -90,10 +90,72 @@ CARD32 NVReadRAMDAC(xf86OutputPtr output, CARD32 ramdac_reg)
   return NV_RD32(nv_output->pRAMDACReg, ramdac_reg);
 }
 
+static void nv_output_backlight_enable(xf86OutputPtr output,  Bool on)
+{
+    ScrnInfoPtr	pScrn = output->scrn;
+    NVPtr pNv = NVPTR(pScrn);   
+
+    /* This is done differently on each laptop.  Here we
+       define the ones we know for sure. */
+    
+#if defined(__powerpc__)
+    if((pNv->Chipset == 0x10DE0179) || 
+       (pNv->Chipset == 0x10DE0189) || 
+       (pNv->Chipset == 0x10DE0329))
+    {
+       /* NV17,18,34 Apple iMac, iBook, PowerBook */
+      CARD32 tmp_pmc, tmp_pcrt;
+      tmp_pmc = nvReadMC(pNv, 0x10F0) & 0x7FFFFFFF;
+      tmp_pcrt = nvReadCRTC0(pNv, NV_CRTC_081C) & 0xFFFFFFFC;
+      if(on) {
+          tmp_pmc |= (1 << 31);
+          tmp_pcrt |= 0x1;
+      }
+      nvWriteMC(pNv, 0x10F0, tmp_pmc);
+      nvWriteCRTC0(pNv, NV_CRTC_081C, tmp_pcrt);
+    }
+#endif
+    
+    if(pNv->twoHeads && ((pNv->Chipset & 0x0ff0) != CHIPSET_NV11))
+	nvWriteMC(pNv, 0x130C, on ? 3 : 7);
+}
+
 static void
 nv_output_dpms(xf86OutputPtr output, int mode)
 {
+    NVOutputPrivatePtr nv_output = output->driver_private;
 
+    if (nv_output->type == OUTPUT_LVDS) {
+	switch(mode) {
+	case DPMSModeStandby:
+	case DPMSModeSuspend:
+	case DPMSModeOff:
+	    nv_output_backlight_enable(output, 0);
+	    break;
+	case DPMSModeOn:
+	    nv_output_backlight_enable(output, 1);
+	default:
+	    break;
+	}
+    }
+
+    if (nv_output->type == OUTPUT_DVI) {
+	CARD32 fpcontrol;
+
+	fpcontrol = NVReadRAMDAC(output, 0x848) & 0xCfffffCC;	
+	switch(mode) {
+	case DPMSModeStandby:
+	case DPMSModeSuspend:
+	case DPMSModeOff:
+	    /* cut the TMDS output */	    
+	    fpcontrol |= 0x20000022;
+	    break;
+	case DPMSModeOn:
+	    fpcontrol |= nv_output->fpSyncs;
+	}
+	
+	NVWriteRAMDAC(output, 0x0848, fpcontrol);
+    }
 
 }
 
@@ -212,9 +274,6 @@ nv_output_detect(xf86OutputPtr output)
 {
   NVOutputPrivatePtr nv_output = output->driver_private;
 
-  if (nv_output->type == OUTPUT_LVDS)
-    return XF86OutputStatusUnknown;
-
   if (nv_output->type == OUTPUT_DVI) {
     if (nv_ddc_detect(output))
       return XF86OutputStatusConnected;
@@ -251,7 +310,7 @@ nv_output_get_modes(xf86OutputPtr output)
 
   /* check if a CRT or DFP */
   if (ddc_mon->features.input_type)
-    nv_output->mon_type = MT_LCD;
+    nv_output->mon_type = MT_DFP;
   else
     nv_output->mon_type = MT_CRT;
 
@@ -264,6 +323,15 @@ nv_output_get_modes(xf86OutputPtr output)
 	nv_ddc_set_edid_property(output, NULL, 0);
     }
 #endif
+
+  if (nv_output->mon_type == MT_DFP) {
+      nv_output->fpWidth = NVReadRAMDAC(output, NV_RAMDAC_FP_HDISP_END) + 1;
+      nv_output->fpHeight = NVReadRAMDAC(output, NV_RAMDAC_FP_VDISP_END) + 1;
+      nv_output->fpSyncs = NVReadRAMDAC(output, NV_RAMDAC_FP_CONTROL) & 0x30000033;
+      xf86DrvMsg(pScrn->scrnIndex, X_PROBED, "Panel size is %i x %i\n",
+		 nv_output->fpWidth, nv_output->fpHeight);
+
+  }
 
   /* Debug info for now, at least */
   xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EDID for output %s\n", output->name);
@@ -313,6 +381,41 @@ static const xf86OutputFuncsRec nv_output_funcs = {
     .mode_set = nv_output_mode_set,
     .detect = nv_output_detect,
     .get_modes = nv_output_get_modes,
+    .destroy = nv_output_destroy
+};
+
+static xf86OutputStatus
+nv_output_lvds_detect(xf86OutputPtr output)
+{
+    return XF86OutputStatusUnknown;    
+}
+
+static DisplayModePtr
+nv_output_lvds_get_modes(xf86OutputPtr output)
+{
+    ScrnInfoPtr	pScrn = output->scrn;
+    NVPtr pNv = NVPTR(pScrn);
+    NVOutputPrivatePtr nv_output = output->driver_private;
+
+    nv_output->fpWidth = NVReadRAMDAC(output, NV_RAMDAC_FP_HDISP_END) + 1;
+    nv_output->fpHeight = NVReadRAMDAC(output, NV_RAMDAC_FP_VDISP_END) + 1;
+    nv_output->fpSyncs = NVReadRAMDAC(output, NV_RAMDAC_FP_CONTROL) & 0x30000033;
+    xf86DrvMsg(pScrn->scrnIndex, X_PROBED, "Panel size is %i x %i\n",
+	       nv_output->fpWidth, nv_output->fpHeight);
+
+    return NULL;
+
+}
+
+static const xf86OutputFuncsRec nv_lvds_output_funcs = {
+    .dpms = nv_output_dpms,
+    .save = nv_output_save,
+    .restore = nv_output_restore,
+    .mode_valid = nv_output_mode_valid,
+    .mode_fixup = nv_output_mode_fixup,
+    .mode_set = nv_output_mode_set,
+    .detect = nv_output_lvds_detect,
+    .get_modes = nv_output_lvds_get_modes,
     .destroy = nv_output_destroy
 };
 

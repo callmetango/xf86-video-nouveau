@@ -2262,14 +2262,7 @@ NVScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 	return FALSE;
 
 
-#if 1
     xf86DPMSInit(pScreen, xf86DPMSSet, 0);
-#else
-    if(pNv->FlatPanel)
-       xf86DPMSInit(pScreen, NVDPMSSetLCD, 0);
-    else
-       xf86DPMSInit(pScreen, NVDPMSSet, 0);
-#endif
 
     xf86DisableRandR(); /* Disable built-in RandR extension */
     xf86RandR12Init (pScreen);
