@@ -48,8 +48,6 @@
 #include "nv_randr.h"
 #include "nv_include.h"
 
-#define NV_MAX_OUTPUT 2
-
 const char *OutputType[] = {
     "None",
     "VGA",
@@ -453,7 +451,6 @@ static DisplayModePtr
 nv_output_lvds_get_modes(xf86OutputPtr output)
 {
     ScrnInfoPtr	pScrn = output->scrn;
-    NVPtr pNv = NVPTR(pScrn);
     NVOutputPrivatePtr nv_output = output->driver_private;
 
     nv_output->fpWidth = NVReadRAMDAC(output, NV_RAMDAC_FP_HDISP_END) + 1;

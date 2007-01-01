@@ -950,9 +950,10 @@ void nv_crtc_save(xf86CrtcPtr crtc)
 {
     ScrnInfoPtr pScrn = crtc->scrn;
     NVPtr pNv = NVPTR(pScrn);
-    
+
     nv_crtc_save_state_vga(crtc, &pNv->SavedReg);
     nv_crtc_save_state_ext(crtc, &pNv->SavedReg);
+
 }
 
 void nv_crtc_restore(xf86CrtcPtr crtc)

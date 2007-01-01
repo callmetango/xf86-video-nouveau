@@ -378,6 +378,7 @@ NVCommonSetup(ScrnInfoPtr pScrn)
 
     pNv->vtOWNER = nvReadVGA(pNv, NV_VGA_CRTCX_OWNER);
 
+    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "vtowner is %d\n", pNv->vtOWNER);
     /* look for known laptop chips */
     /* FIXME we could add some ids here (0x0164,0x0167,0x0168,0x01D6,0x01D7,0x01D8,0x0298,0x0299,0x0398) */
     switch(pNv->Chipset & 0xffff) {

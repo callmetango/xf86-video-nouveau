@@ -1842,19 +1842,27 @@ NVRestore(ScrnInfoPtr pScrn)
     xf86CrtcConfigPtr   xf86_config = XF86_CRTC_CONFIG_PTR(pScrn);
     NVRegPtr nvReg = &pNv->SavedReg;
     int i;
+    int vgaflags = VGA_SR_CMAP | VGA_SR_MODE;
+
+    for (i = 0; i< xf86_config->num_output; i++) {
+	xf86_config->output[i]->funcs->restore(xf86_config->output[i]);
+    }
 
     for (i = 0; i < xf86_config->num_crtc; i++) {
 	xf86_config->crtc[i]->funcs->restore(xf86_config->crtc[i]);
     }
 
-    
-    for (i = 0; i< xf86_config->num_output; i++) {
-	xf86_config->output[i]->funcs->restore(xf86_config->output[i]);
-    }
+    nvWriteVGA(pNv, NV_VGA_CRTCX_OWNER, pNv->vtOWNER);
 
+#ifndef __powerpc__
+   vgaflags |= VGA_SR_FONTS;
+#endif
+    vgaHWRestore(pScrn, vgaReg, vgaflags);
 
-    vgaHWRestore(pScrn, vgaReg, VGA_SR_FONTS);
+    nvWriteVGA(pNv, NV_VGA_CRTCX_OWNER, pNv->vtOWNER);
+
     vgaHWLock(hwp);
+
 }
 
 #define DEPTH_SHIFT(val, w) ((val << (8 - w)) | (val >> ((w << 1) - 8)))
@@ -1955,10 +1963,8 @@ NVScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 	if (!NVInitDma(pScrn))
 		return FALSE;
 
-    pScrn->memPhysBase = pNv->VRAMPhysical;
-    pScrn->fbOffset = 0;
-
-    ErrorF("Calling ENTERVT\n");
+	pScrn->memPhysBase = pNv->VRAMPhysical;
+	pScrn->fbOffset = 0;
 	
 	if (!NVEnterVT(scrnIndex, 0))
 	  return FALSE;
@@ -2206,6 +2212,7 @@ NVSave(ScrnInfoPtr pScrn)
     vgaRegPtr vgaReg = &pVga->SavedReg;
     xf86CrtcConfigPtr   xf86_config = XF86_CRTC_CONFIG_PTR(pScrn);
     int i;
+    int vgaflags = VGA_SR_CMAP | VGA_SR_MODE;
     
     for (i = 0; i < xf86_config->num_crtc; i++) {
 	xf86_config->crtc[i]->funcs->save(xf86_config->crtc[i]);
@@ -2217,7 +2224,10 @@ NVSave(ScrnInfoPtr pScrn)
     }
 
    vgaHWUnlock(pVga);
-   vgaHWSave(pScrn, vgaReg, VGA_SR_FONTS);
+#ifndef __powerpc__
+   vgaflags |= VGA_SR_FONTS;
+#endif
+   vgaHWSave(pScrn, vgaReg, vgaflags);
 }
 
 #ifdef RANDR
