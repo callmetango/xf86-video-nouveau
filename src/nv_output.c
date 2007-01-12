@@ -47,6 +47,7 @@
 #include "nv_xf86Crtc.h"
 #include "nv_randr.h"
 #include "nv_include.h"
+#include "nv_xf86Modes.h"
 
 const char *OutputType[] = {
     "None",

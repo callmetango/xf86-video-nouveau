@@ -29,6 +29,7 @@
 #include "config.h"
 #endif
 
+#include <assert.h>
 #include "xf86.h"
 #include "os.h"
 #include "mibank.h"
