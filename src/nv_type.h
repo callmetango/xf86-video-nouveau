@@ -164,7 +164,6 @@ typedef struct _NVCrtcPrivateRec {
 
 typedef struct _NVOutputPrivateRec {
         int ramdac;
-        volatile CARD32 *pRAMDACReg;
         I2CBusPtr		    pDDCBus;
         NVOutputType type;
         NVMonitorType mon_type;

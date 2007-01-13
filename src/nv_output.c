@@ -89,13 +89,21 @@ CARD32 NVReadRAMDAC0(xf86OutputPtr output, CARD32 ramdac_reg)
 void NVWriteRAMDAC(xf86OutputPtr output, CARD32 ramdac_reg, CARD32 val)
 {
   NVOutputPrivatePtr nv_output = output->driver_private;
-  NV_WR32(nv_output->pRAMDACReg, ramdac_reg, val);
+  ScrnInfoPtr	pScrn = output->scrn;
+  NVPtr pNv = NVPTR(pScrn);
+  volatile CARD32 *pRAMDACReg = nv_output->ramdac ? pNv->PRAMDAC1 : pNv->PRAMDAC0;
+
+  NV_WR32(pRAMDACReg, ramdac_reg, val);
 }
 
 CARD32 NVReadRAMDAC(xf86OutputPtr output, CARD32 ramdac_reg)
 {
   NVOutputPrivatePtr nv_output = output->driver_private;
-  return NV_RD32(nv_output->pRAMDACReg, ramdac_reg);
+  ScrnInfoPtr	pScrn = output->scrn;
+  NVPtr pNv = NVPTR(pScrn);
+  volatile CARD32 *pRAMDACReg = nv_output->ramdac ? pNv->PRAMDAC1 : pNv->PRAMDAC0;
+
+  return NV_RD32(pRAMDACReg, ramdac_reg);
 }
 
 static void nv_output_backlight_enable(xf86OutputPtr output,  Bool on)
@@ -645,10 +653,6 @@ void NvSetupOutputs(ScrnInfoPtr pScrn)
     output->driver_private = nv_output;
     nv_output->type = output_type;
     nv_output->ramdac = i;
-    if (i == 0)
-      nv_output->pRAMDACReg = pNv->PRAMDAC0;
-    else
-      nv_output->pRAMDACReg = pNv->PRAMDAC1;
 
     NV_I2CInit(pScrn, &nv_output->pDDCBus, i ? 0x36 : 0x3e, ddc_name[i]);
     output->possible_crtcs = (1 << i);//crtc_mask;
