@@ -217,21 +217,22 @@ void nv_output_load_state_ext(xf86OutputPtr output, RIVA_HW_STATE *state)
 
     regp = &state->dac_reg[nv_output->ramdac];
 
-    NVWriteRAMDAC(output, NV_RAMDAC_OUTPUT, regp->output);
     NVWriteRAMDAC(output, NV_RAMDAC_FP_DEBUG_0, regp->debug_0);
+    NVWriteRAMDAC(output, NV_RAMDAC_OUTPUT, regp->output);
     NVWriteRAMDAC(output, NV_RAMDAC_FP_CONTROL, regp->fp_control);
     NVWriteRAMDAC(output, NV_RAMDAC_FP_HCRTC, regp->crtcSync);
-    if(nv_output->mon_type == MT_CRT) {
-	NVWriteRAMDAC0(output, NV_RAMDAC_PLL_SELECT, state->pllsel);
-	NVWriteRAMDAC0(output, NV_RAMDAC_VPLL, state->vpll);
-	if(pNv->twoHeads)
-	    NVWriteRAMDAC0(output, NV_RAMDAC_VPLL2, state->vpll2);
-	if(pNv->twoStagePLL) {
-	    NVWriteRAMDAC0(output, NV_RAMDAC_VPLL_B, state->vpllB);
-	    NVWriteRAMDAC0(output, NV_RAMDAC_VPLL2_B, state->vpll2B);
-	}
-    }
 
+    if(nv_output->mon_type == MT_CRT) {
+      NVWriteRAMDAC0(output, NV_RAMDAC_PLL_SELECT, state->pllsel);
+      
+      NVWriteRAMDAC0(output, NV_RAMDAC_VPLL, state->vpll);
+      if(pNv->twoHeads)
+	NVWriteRAMDAC0(output, NV_RAMDAC_VPLL2, state->vpll2);
+      if(pNv->twoStagePLL) {
+	NVWriteRAMDAC0(output, NV_RAMDAC_VPLL_B, state->vpllB);
+	NVWriteRAMDAC0(output, NV_RAMDAC_VPLL2_B, state->vpll2B);
+      }
+    }
     if((pNv->Chipset & 0x0ff0) == CHIPSET_NV11) {
       NVWriteRAMDAC(output, NV_RAMDAC_DITHER_NV11, regp->dither);
     } else if(pNv->twoHeads) {
@@ -361,10 +362,10 @@ nv_output_mode_set_regs(xf86OutputPtr output, DisplayModePtr mode)
        regp->crtcSync = savep->crtcSync;
        regp->crtcSync += nv_output_tweak_panel(output, state);
 
-       regp->debug_0 |= NV_RAMDAC_FP_DEBUG_0_PWRDOWN_BOTH;
+       regp->debug_0 &= ~NV_RAMDAC_FP_DEBUG_0_PWRDOWN_BOTH;
     }
     else
-	regp->debug_0 &= ~NV_RAMDAC_FP_DEBUG_0_PWRDOWN_BOTH;
+	regp->debug_0 |= NV_RAMDAC_FP_DEBUG_0_PWRDOWN_BOTH;
 
     if(pNv->twoHeads) {
         if((pNv->Chipset & 0x0ff0) == CHIPSET_NV11) {
@@ -372,6 +373,7 @@ nv_output_mode_set_regs(xf86OutputPtr output, DisplayModePtr mode)
            if(pNv->FPDither)
               regp->dither |= 0x00010000;
         } else {
+	  ErrorF("savep->dither %08X\n", savep->dither);
 	    regp->dither = savep->dither & ~1;
 	    if(pNv->FPDither)
 	      regp->dither |= 1;
@@ -403,13 +405,13 @@ nv_output_mode_set_regs(xf86OutputPtr output, DisplayModePtr mode)
 	}
 
 	if (is_fp == TRUE)
-	  regp->output = 0;
+	  regp->output = 0x1;
 	else if (nv_crtc->crtc == 0 && nv_output->ramdac == 1 && (two_crt == TRUE))
 	  regp->output = 0x101;
 	else
 	  regp->output = 0x1;
 
-       
+       	ErrorF("output%d: %02X: twomon %d\n", nv_output->ramdac, regp->output, two_crt);
     }
 }
 

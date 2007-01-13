@@ -704,6 +704,21 @@ xf86InitialConfiguration (ScrnInfoPtr	    pScrn)
     
     /* Mirror output modes to pScrn mode list */
     xf86SetScrnInfoModes (pScrn);
+
+    for (o = 0; o < config->num_output; o++)
+    {
+      xf86OutputPtr output = config->output[o];
+      xf86CrtcPtr crtc;
+
+      for (c = 0; c < config->num_output; c++)
+      {
+	crtc = config->crtc[c];
+
+	if (output->crtc == crtc)
+	  ErrorF("Output %d is connected to CRTC %d: %d\n", o, c, output->possible_crtcs);
+	
+      }
+    }
     
     xfree (crtcs);
     xfree (modes);

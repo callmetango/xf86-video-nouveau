@@ -449,7 +449,6 @@ void nv_crtc_calc_state_ext(
 		regp->CRTC[NV_VGA_CRTCX_CURCTL1]|= 2;
 
             state->pllsel   = 0x10000700;
-       	    state->pllsel |= 0x20000800;
             state->config   = nvReadFB(pNv, NV_PFB_CFG0);
             regp->CRTC[NV_VGA_CRTCX_REPAINT1] = hDisplaySize < 1280 ? 0x04 : 0x00;
             break;
@@ -461,7 +460,7 @@ void nv_crtc_calc_state_ext(
       regp->CRTC[NV_VGA_CRTCX_FIFO_LWM_NV30] = state->arbitration1 >> 8;
     }
     
-
+    
     regp->CRTC[NV_VGA_CRTCX_REPAINT0] = (((width / 8) * pixelDepth) & 0x700) >> 3;
     regp->CRTC[NV_VGA_CRTCX_PIXEL] = (pixelDepth > 2) ? 3 : pixelDepth;
 }
@@ -819,7 +818,13 @@ nv_crtc_mode_set_regs(xf86CrtcPtr crtc, DisplayModePtr mode)
 	regp->CRTC[NV_VGA_CRTCX_INTERLACE] = 0xff;  /* interlace off */
     }
 
-    regp->CRTC[NV_VGA_CRTCX_BUFFER] = 0xfb;
+    regp->CRTC[NV_VGA_CRTCX_BUFFER] = 0xfa;
+    
+    if (is_fp) {
+	    regp->CRTC[NV_VGA_CRTCX_LCD] = savep->CRTC[NV_VGA_CRTCX_LCD] | 1;
+    } else {
+	    regp->CRTC[NV_VGA_CRTCX_LCD] = savep->CRTC[NV_VGA_CRTCX_LCD] & ~1;
+    }
 
     /*
      * Initialize DAC palette.
@@ -846,12 +851,12 @@ nv_crtc_mode_set_regs(xf86CrtcPtr crtc, DisplayModePtr mode)
 	pNv->CURSOR = (CARD32 *)pNv->Cursor->map;
 
     nv_crtc_calc_state_ext(crtc,
-                    i,
-                    pLayout->displayWidth,
-                    mode->CrtcHDisplay,
-                    pScrn->virtualY,
-                    mode->Clock,
-                    mode->Flags);
+			   i,
+			   pLayout->displayWidth,
+			   mode->CrtcHDisplay,
+			   mode->CrtcVDisplay,
+			   mode->Clock,
+			   mode->Flags);
 
     if (is_fp)
       regp->CRTC[NV_VGA_CRTCX_PIXEL] |= (1 << 7);
