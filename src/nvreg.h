@@ -194,6 +194,14 @@
 #define NV_RAMDAC_TV_HSYNC_END      0x734
 #define NV_RAMDAC_TV_SYNC_DELAY     0x738
 
+#define REG_DISP_END 0
+#define REG_DISP_TOTAL 1
+#define REG_DISP_CRTC 2
+#define REG_DISP_SYNC_START 3
+#define REG_DISP_SYNC_END 4
+#define REG_DISP_VALID_START 5
+#define REG_DISP_VALID_END 6
+
 #define NV_RAMDAC_FP_VDISP_END      0x800
 #define NV_RAMDAC_FP_VTOTAL         0x804
 #define NV_RAMDAC_FP_VCRTC          0x808

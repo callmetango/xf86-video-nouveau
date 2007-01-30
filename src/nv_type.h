@@ -114,6 +114,8 @@ typedef struct _nv_crtc_reg
     CARD32 unk830;
     CARD32 unk834;
     CARD32 head;
+    CARD32 fp_horiz_regs[7];
+    CARD32 fp_vert_regs[7];
 } NVCrtcRegRec, *NVCrtcRegPtr;
 
 typedef struct _nv_output_reg
