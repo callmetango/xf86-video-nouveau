@@ -398,33 +398,37 @@ nv_output_mode_set_regs(xf86OutputPtr output, DisplayModePtr mode)
     if (output->crtc) {
 	NVCrtcPrivatePtr nv_crtc = output->crtc->driver_private;
 	int two_crt = FALSE;
+	int two_mon = FALSE;
 
 	for (i = 0; i < config->num_output; i++) {
 	    if (config->output[i] != output) {
 		NVOutputPrivatePtr nv_output2 = config->output[i]->driver_private;	    
-		if (nv_output2->mon_type == MT_CRT && nv_output->mon_type == MT_CRT)
+		if ((nv_output2->mon_type == MT_CRT) && (nv_output->mon_type == MT_CRT))
 		    two_crt = TRUE;
+		if ((nv_output2->mon_type>0) && (nv_output->mon_type>0))
+		    two_mon = TRUE;
 	    }
 	}
 
 	if (is_fp == TRUE)
 	    regp->output = 0x0;
+	else if (nv_crtc->crtc == 0 && nv_output->ramdac == 1 && (two_crt == TRUE))
 
-	if (nv_crtc->crtc == 0 && nv_output->ramdac == 1 && (two_crt == TRUE)) {
+	    	regp->output = 0x101;
+	else
+		regp->output = 0x1;
+
+	if (nv_crtc->crtc == 0 && nv_output->ramdac == 1 && two_mon) {
 	    state->vpll2 = state->pll;
 	    state->vpll2B = state->pllB;
 	    state->pllsel |= (1<<29) | (1<<11);
-            if (!is_fp)
-	    	regp->output = 0x101;
 	}
 	else {
 	    state->vpll = state->pll;
 	    state->vpllB = state->pllB;
-            if (!is_fp)
-	    	regp->output = 0x1;
 	}
 
-	ErrorF("output%d: %04X: twomon %d\n", nv_output->ramdac, regp->output, two_crt);
+	ErrorF("output%d: %04X: twocrt %d twomon %d\n", nv_output->ramdac, regp->output, two_crt, two_mon);
     }
 }
 
