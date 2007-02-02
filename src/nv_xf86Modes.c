@@ -146,47 +146,13 @@ xf86SetModeCrtc(DisplayModePtr p, int adjustFlags)
         p->CrtcVSyncEnd         *= p->VScan;
         p->CrtcVTotal           *= p->VScan;
     }
-    p->CrtcHAdjusted = FALSE;
-    p->CrtcVAdjusted = FALSE;
-
-    /*
-     * XXX
-     *
-     * The following is taken from VGA, but applies to other cores as well.
-     */
     p->CrtcVBlankStart = min(p->CrtcVSyncStart, p->CrtcVDisplay);
     p->CrtcVBlankEnd = max(p->CrtcVSyncEnd, p->CrtcVTotal);
-    if ((p->CrtcVBlankEnd - p->CrtcVBlankStart) >= 127) {
-        /* 
-         * V Blanking size must be < 127.
-         * Moving blank start forward is safer than moving blank end
-         * back, since monitors clamp just AFTER the sync pulse (or in
-         * the sync pulse), but never before.
-         */
-        p->CrtcVBlankStart = p->CrtcVBlankEnd - 127;
-	/*
-	 * If VBlankStart is now > VSyncStart move VBlankStart
-	 * to VSyncStart using the maximum width that fits into
-	 * VTotal.
-	 */
-	if (p->CrtcVBlankStart > p->CrtcVSyncStart) {
-	    p->CrtcVBlankStart = p->CrtcVSyncStart;
-	    p->CrtcVBlankEnd = min(p->CrtcHBlankStart + 127, p->CrtcVTotal);
-	}
-    }
     p->CrtcHBlankStart = min(p->CrtcHSyncStart, p->CrtcHDisplay);
     p->CrtcHBlankEnd = max(p->CrtcHSyncEnd, p->CrtcHTotal);
 
-    if ((p->CrtcHBlankEnd - p->CrtcHBlankStart) >= 63 * 8) {
-        /*
-         * H Blanking size must be < 63*8. Same remark as above.
-         */
-        p->CrtcHBlankStart = p->CrtcHBlankEnd - 63 * 8;
-	if (p->CrtcHBlankStart > p->CrtcHSyncStart) {
-	    p->CrtcHBlankStart = p->CrtcHSyncStart;
-	    p->CrtcHBlankEnd = min(p->CrtcHBlankStart + 63 * 8, p->CrtcHTotal);
-	}
-    }
+    p->CrtcHAdjusted = FALSE;
+    p->CrtcVAdjusted = FALSE;
 }
 
 /**
@@ -335,7 +301,7 @@ xf86PrintModeline(int scrnIndex,DisplayModePtr mode)
  * This is not in xf86Modes.c, but would be part of the proposed new API.
  */
 void
-nvxf86ValidateModesFlags(ScrnInfoPtr pScrn, DisplayModePtr modeList,
+xf86ValidateModesFlags(ScrnInfoPtr pScrn, DisplayModePtr modeList,
 			    int flags)
 {
     DisplayModePtr mode;
@@ -356,7 +322,7 @@ nvxf86ValidateModesFlags(ScrnInfoPtr pScrn, DisplayModePtr modeList,
  * This is not in xf86Modes.c, but would be part of the proposed new API.
  */
 void
-nvxf86ValidateModesSize(ScrnInfoPtr pScrn, DisplayModePtr modeList,
+xf86ValidateModesSize(ScrnInfoPtr pScrn, DisplayModePtr modeList,
 			  int maxX, int maxY, int maxPitch)
 {
     DisplayModePtr mode;
@@ -385,7 +351,7 @@ nvxf86ValidateModesSize(ScrnInfoPtr pScrn, DisplayModePtr modeList,
  * This is not in xf86Modes.c, but would be part of the proposed new API.
  */
 void
-nvxf86ValidateModesSync(ScrnInfoPtr pScrn, DisplayModePtr modeList,
+xf86ValidateModesSync(ScrnInfoPtr pScrn, DisplayModePtr modeList,
 			  MonPtr mon)
 {
     DisplayModePtr mode;
@@ -432,7 +398,7 @@ nvxf86ValidateModesSync(ScrnInfoPtr pScrn, DisplayModePtr modeList,
  * This is not in xf86Modes.c, but would be part of the proposed new API.
  */
 void
-nvxf86ValidateModesClocks(ScrnInfoPtr pScrn, DisplayModePtr modeList,
+xf86ValidateModesClocks(ScrnInfoPtr pScrn, DisplayModePtr modeList,
 			    int *min, int *max, int n_ranges)
 {
     DisplayModePtr mode;
@@ -466,7 +432,7 @@ nvxf86ValidateModesClocks(ScrnInfoPtr pScrn, DisplayModePtr modeList,
  * This is not in xf86Modes.c, but would be part of the proposed new API.
  */
 void
-nvxf86ValidateModesUserConfig(ScrnInfoPtr pScrn, DisplayModePtr modeList)
+xf86ValidateModesUserConfig(ScrnInfoPtr pScrn, DisplayModePtr modeList)
 {
     DisplayModePtr mode;
 
@@ -500,7 +466,7 @@ nvxf86ValidateModesUserConfig(ScrnInfoPtr pScrn, DisplayModePtr modeList)
  * This is not in xf86Modes.c, but would be part of the proposed new API.
  */
 void
-nvxf86PruneInvalidModes(ScrnInfoPtr pScrn, DisplayModePtr *modeList,
+xf86PruneInvalidModes(ScrnInfoPtr pScrn, DisplayModePtr *modeList,
 			  Bool verbose)
 {
     DisplayModePtr mode;
@@ -556,13 +522,13 @@ xf86ModesAdd(DisplayModePtr modes, DisplayModePtr new)
  * Build a mode list from a list of config file modes
  */
 static DisplayModePtr
-nvxf86GetConfigModes (XF86ConfModeLinePtr conf_mode)
+xf86GetConfigModes (XF86ConfModeLinePtr conf_mode)
 {
     DisplayModePtr  head = NULL, prev = NULL, mode;
     
     for (; conf_mode; conf_mode = (XF86ConfModeLinePtr) conf_mode->list.next)
     {
-        mode = xalloc(sizeof(DisplayModeRec));
+        mode = xcalloc(1, sizeof(DisplayModeRec));
 	if (!mode)
 	    continue;
         mode->name       = xstrdup(conf_mode->ml_identifier);
@@ -571,8 +537,6 @@ nvxf86GetConfigModes (XF86ConfModeLinePtr conf_mode)
 	    xfree (mode);
 	    continue;
 	}
-	
-        memset(mode,'\0',sizeof(DisplayModeRec));
 	mode->type       = 0;
         mode->Clock      = conf_mode->ml_clock;
         mode->HDisplay   = conf_mode->ml_hdisplay;
@@ -602,7 +566,7 @@ nvxf86GetConfigModes (XF86ConfModeLinePtr conf_mode)
  * Build a mode list from a monitor configuration
  */
 DisplayModePtr
-nvxf86GetMonitorModes (ScrnInfoPtr pScrn, XF86ConfMonitorPtr conf_monitor)
+xf86GetMonitorModes (ScrnInfoPtr pScrn, XF86ConfMonitorPtr conf_monitor)
 {
     DisplayModePtr	    modes = NULL;
     XF86ConfModesLinkPtr    modes_link;
@@ -623,18 +587,18 @@ nvxf86GetMonitorModes (ScrnInfoPtr pScrn, XF86ConfMonitorPtr conf_monitor)
 						  xf86configptr->conf_modes_lst);
 	if (modes_link->ml_modes)
 	    modes = xf86ModesAdd (modes,
-				  nvxf86GetConfigModes (modes_link->ml_modes->mon_modeline_lst));
+				  xf86GetConfigModes (modes_link->ml_modes->mon_modeline_lst));
     }
 
     return xf86ModesAdd (modes,
-			 nvxf86GetConfigModes (conf_monitor->mon_modeline_lst));
+			 xf86GetConfigModes (conf_monitor->mon_modeline_lst));
 }
 
 /**
  * Build a mode list containing all of the default modes
  */
 DisplayModePtr
-nvxf86GetDefaultModes (Bool interlaceAllowed, Bool doubleScanAllowed)
+xf86GetDefaultModes (Bool interlaceAllowed, Bool doubleScanAllowed)
 {
     DisplayModePtr  head = NULL, prev = NULL, mode;
     int		    i;

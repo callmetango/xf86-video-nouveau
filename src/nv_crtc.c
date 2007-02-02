@@ -938,7 +938,8 @@ nv_crtc_mode_set_regs(xf86CrtcPtr crtc, DisplayModePtr mode)
  */
 static void
 nv_crtc_mode_set(xf86CrtcPtr crtc, DisplayModePtr mode,
-		 DisplayModePtr adjusted_mode)
+		 DisplayModePtr adjusted_mode,
+		 int x, int y)
 {
     ScrnInfoPtr pScrn = crtc->scrn;
     NVCrtcPrivatePtr nv_crtc = crtc->driver_private;
@@ -1350,49 +1351,56 @@ NVCrtcFindClosestMode(xf86CrtcPtr crtc, DisplayModePtr pMode)
 }
 
 Bool
-NVCrtcInUse (xf86CrtcPtr crtc)
-{
-    ScrnInfoPtr pScrn = crtc->scrn;
-    xf86CrtcConfigPtr   xf86_config = XF86_CRTC_CONFIG_PTR(pScrn);
-    int	i;
-    
-    for (i = 0; i < xf86_config->num_output; i++)
-	if (xf86_config->output[i]->crtc == crtc)
-	    return TRUE;
-    return FALSE;
-}
-
-Bool
-NVCrtcSetMode(xf86CrtcPtr crtc, DisplayModePtr pMode)
+NVCrtcSetMode(xf86CrtcPtr crtc, DisplayModePtr mode, Rotation rotation,
+	      int x, int y)
 {
     ScrnInfoPtr pScrn = crtc->scrn;
     xf86CrtcConfigPtr xf86_config = XF86_CRTC_CONFIG_PTR(pScrn);
+    Bool		didLock = FALSE;
     int i;
     Bool ret = FALSE;
     DisplayModePtr adjusted_mode;
+    DisplayModeRec	saved_mode;
+    int			saved_x, saved_y;
+    Rotation		saved_rotation;
 
-    adjusted_mode = xf86DuplicateMode(pMode);    
-    crtc->enabled = NVCrtcInUse(crtc);
+    adjusted_mode = xf86DuplicateMode(mode);    
+    crtc->enabled = xf86CrtcInUse(crtc);
 
     if (!crtc->enabled) {
 	return TRUE;
     }
 
-    
+    saved_mode = crtc->mode;
+    saved_x = crtc->x;
+    saved_y = crtc->y;
+    saved_rotation = crtc->rotation;
+    /* Update crtc values up front so the driver can rely on them for mode
+     * setting.
+     */
+    crtc->mode = *mode;
+    crtc->x = x;
+    crtc->y = y;
+    crtc->rotation = rotation;
+
     for (i = 0; i < xf86_config->num_output; i++) {
 	xf86OutputPtr output = xf86_config->output[i];
 
 	if (output->crtc != crtc)
 	    continue;
 
-	if (!output->funcs->mode_fixup(output, pMode, adjusted_mode)) {
+	if (!output->funcs->mode_fixup(output, mode, adjusted_mode)) {
 	    ret = FALSE;
 	    goto done;
 	}
     }
 
-    if (!crtc->funcs->mode_fixup(crtc, pMode, adjusted_mode)) {
+    if (!crtc->funcs->mode_fixup(crtc, mode, adjusted_mode)) {
 	ret = FALSE;
+	goto done;
+    }
+
+    if (!xf86CrtcRotate (crtc, mode, rotation)) {
 	goto done;
     }
 
@@ -1411,11 +1419,11 @@ NVCrtcSetMode(xf86CrtcPtr crtc, DisplayModePtr pMode)
 
     crtc->funcs->dpms(crtc, DPMSModeOff);
 
-    crtc->funcs->mode_set(crtc, pMode, adjusted_mode);
+    crtc->funcs->mode_set(crtc, mode, adjusted_mode, x, y);
     for (i = 0; i < xf86_config->num_output; i++) {
 	xf86OutputPtr output = xf86_config->output[i];
 	if (output->crtc == crtc)
-	    output->funcs->mode_set(output, pMode, adjusted_mode);
+	    output->funcs->mode_set(output, mode, adjusted_mode);
     }
 
     /* Now, enable the clocks, plane, pipe, and outputs that we set up. */
@@ -1426,12 +1434,18 @@ NVCrtcSetMode(xf86CrtcPtr crtc, DisplayModePtr pMode)
 	    output->funcs->dpms(output, DPMSModeOn);
     }
 
-    crtc->curMode = *pMode;
-
     /* XXX free adjustedmode */
     ret = TRUE;
 
  done:
+
+    if (!ret) {
+	crtc->x = saved_x;
+	crtc->y = saved_y;
+	crtc->rotation = saved_rotation;
+	crtc->mode = saved_mode;
+    }
+
     return ret;
 }
 
@@ -1440,7 +1454,7 @@ NVCrtcSetMode(xf86CrtcPtr crtc, DisplayModePtr pMode)
  * all active outputs using a mode similar to the specified mode.
  */
 Bool
-NVSetMode(ScrnInfoPtr pScrn, DisplayModePtr pMode)
+NVSetMode(ScrnInfoPtr pScrn, DisplayModePtr pMode, Rotation rotation)
 {
     xf86CrtcConfigPtr	config = XF86_CRTC_CONFIG_PTR(pScrn);
     Bool ok = TRUE;
@@ -1449,7 +1463,7 @@ NVSetMode(ScrnInfoPtr pScrn, DisplayModePtr pMode)
     if (crtc && crtc->enabled)
     {
 	ok = NVCrtcSetMode(crtc,
-			   NVCrtcFindClosestMode(crtc, pMode));
+			   NVCrtcFindClosestMode(crtc, pMode), rotation, 0, 0);
 
 	if (!ok)
 	    goto done;

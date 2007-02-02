@@ -199,7 +199,7 @@ NVSetCursorPosition(ScrnInfoPtr pScrn, int x, int y)
 	continue;
 
       crtc = output->crtc;
-      mode = &crtc->curMode;
+      mode = &crtc->mode;
       thisx = x - crtc->x;
       thisy = y - crtc->y;
 

@@ -29,61 +29,55 @@
 #define _NV_XF86MODES_H_
 #include "xorgVersion.h"
 #include "xf86Parser.h"
+#include "edid.h"
+#include "nv_xf86Rename.h"
 
-#if XORG_VERSION_CURRENT <= XORG_VERSION_NUMERIC(7,2,99,2,0)
-double nv_xf86ModeHSync(DisplayModePtr mode);
-double nv_xf86ModeVRefresh(DisplayModePtr mode);
-DisplayModePtr nv_xf86DuplicateMode(DisplayModePtr pMode);
-DisplayModePtr nv_xf86DuplicateModes(ScrnInfoPtr pScrn,
+double xf86ModeHSync(DisplayModePtr mode);
+double xf86ModeVRefresh(DisplayModePtr mode);
+DisplayModePtr xf86DuplicateMode(DisplayModePtr pMode);
+DisplayModePtr xf86DuplicateModes(ScrnInfoPtr pScrn,
 				       DisplayModePtr modeList);
-void nv_xf86SetModeDefaultName(DisplayModePtr mode);
-void nv_xf86SetModeCrtc(DisplayModePtr p, int adjustFlags);
-Bool nv_xf86ModesEqual(DisplayModePtr pMode1, DisplayModePtr pMode2);
-void nv_xf86PrintModeline(int scrnIndex,DisplayModePtr mode);
-DisplayModePtr nv_xf86ModesAdd(DisplayModePtr modes, DisplayModePtr new);
+void xf86SetModeDefaultName(DisplayModePtr mode);
+void xf86SetModeCrtc(DisplayModePtr p, int adjustFlags);
+Bool xf86ModesEqual(DisplayModePtr pMode1, DisplayModePtr pMode2);
+void xf86PrintModeline(int scrnIndex,DisplayModePtr mode);
+DisplayModePtr xf86ModesAdd(DisplayModePtr modes, DisplayModePtr new);
 
-#define xf86ModeHSync nv_xf86ModeHSync
-#define xf86ModeVRefresh nv_xf86ModeVRefresh
-#define xf86DuplicateMode nv_xf86DuplicateMode
-#define xf86DuplicateModes nv_xf86DuplicateModes
-#define xf86SetModeDefaultName nv_xf86SetModeDefaultName
-#define xf86SetModeCrtc nv_xf86SetModeCrtc
-#define xf86ModesEqual nv_xf86ModesEqual
-#define xf86PrintModeline nv_xf86PrintModeline
-#define xf86ModesAdd nv_xf86ModesAdd
-#endif /* XORG_VERSION_CURRENT <= 7.2.99.2 */
+DisplayModePtr xf86DDCGetModes(int scrnIndex, xf86MonPtr DDC);
+DisplayModePtr xf86CVTMode(int HDisplay, int VDisplay, float VRefresh,
+			   Bool Reduced, Bool Interlaced);
 
 void
-nvxf86ValidateModesFlags(ScrnInfoPtr pScrn, DisplayModePtr modeList,
-			    int flags);
+xf86ValidateModesFlags(ScrnInfoPtr pScrn, DisplayModePtr modeList,
+		       int flags);
 
 void
-nvxf86ValidateModesClocks(ScrnInfoPtr pScrn, DisplayModePtr modeList,
-			    int *min, int *max, int n_ranges);
+xf86ValidateModesClocks(ScrnInfoPtr pScrn, DisplayModePtr modeList,
+			int *min, int *max, int n_ranges);
 
 void
-nvxf86ValidateModesSize(ScrnInfoPtr pScrn, DisplayModePtr modeList,
-			  int maxX, int maxY, int maxPitch);
+xf86ValidateModesSize(ScrnInfoPtr pScrn, DisplayModePtr modeList,
+		      int maxX, int maxY, int maxPitch);
 
 void
-nvxf86ValidateModesSync(ScrnInfoPtr pScrn, DisplayModePtr modeList,
-			  MonPtr mon);
+xf86ValidateModesSync(ScrnInfoPtr pScrn, DisplayModePtr modeList,
+		      MonPtr mon);
 
 void
-nvxf86PruneInvalidModes(ScrnInfoPtr pScrn, DisplayModePtr *modeList,
-			  Bool verbose);
+xf86PruneInvalidModes(ScrnInfoPtr pScrn, DisplayModePtr *modeList,
+		      Bool verbose);
 
 void
-nvxf86ValidateModesFlags(ScrnInfoPtr pScrn, DisplayModePtr modeList,
-			    int flags);
+xf86ValidateModesFlags(ScrnInfoPtr pScrn, DisplayModePtr modeList,
+		       int flags);
 
 void
-nvxf86ValidateModesUserConfig(ScrnInfoPtr pScrn, DisplayModePtr modeList);
+xf86ValidateModesUserConfig(ScrnInfoPtr pScrn, DisplayModePtr modeList);
 
 DisplayModePtr
-nvxf86GetMonitorModes (ScrnInfoPtr pScrn, XF86ConfMonitorPtr conf_monitor);
+xf86GetMonitorModes (ScrnInfoPtr pScrn, XF86ConfMonitorPtr conf_monitor);
 
 DisplayModePtr
-nvxf86GetDefaultModes (Bool interlaceAllowed, Bool doubleScanAllowed);
+xf86GetDefaultModes (Bool interlaceAllowed, Bool doubleScanAllowed);
 
 #endif /* _NV_XF86MODES_H_ */
