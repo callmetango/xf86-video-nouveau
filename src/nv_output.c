@@ -115,7 +115,30 @@ static void nv_output_backlight_enable(xf86OutputPtr output,  Bool on)
 }
 
 static void
-nv_output_dpms(xf86OutputPtr output, int mode)
+nv_panel_output_dpms(xf86OutputPtr output, int mode)
+{
+
+    switch(mode) {
+    case DPMSModeStandby:
+    case DPMSModeSuspend:
+    case DPMSModeOff:
+	nv_output_backlight_enable(output, 0);
+	break;
+    case DPMSModeOn:
+	nv_output_backlight_enable(output, 1);
+    default:
+	break;
+    }
+}
+
+static void
+nv_analog_output_dpms(xf86OutputPtr output, int mode)
+{
+
+}
+
+static void
+nv_digital_output_dpms(xf86OutputPtr output, int mode)
 {
     NVOutputPrivatePtr nv_output = output->driver_private;
     xf86CrtcPtr crtc = output->crtc;
@@ -123,27 +146,12 @@ nv_output_dpms(xf86OutputPtr output, int mode)
     NVPtr pNv = NVPTR(pScrn);
     NVCrtcPrivatePtr nv_crtc;
 
-    if (nv_output->type == OUTPUT_LVDS) {
-	switch(mode) {
-	case DPMSModeStandby:
-	case DPMSModeSuspend:
-	case DPMSModeOff:
-	    nv_output_backlight_enable(output, 0);
-	    break;
-	case DPMSModeOn:
-	    nv_output_backlight_enable(output, 1);
-	default:
-	    break;
-	}
-    }
-
-    if (nv_output->type == OUTPUT_DVI) {
-	CARD32 fpcontrol;
-
-	if (crtc)  {
-            nv_crtc = crtc->driver_private;
-
-	    fpcontrol = nvReadRAMDAC(pNv, nv_crtc->crtc, NV_RAMDAC_FP_CONTROL) & 0xCfffffCC;	
+    CARD32 fpcontrol;
+    
+    if (crtc)  {
+	nv_crtc = crtc->driver_private;
+	
+	fpcontrol = nvReadRAMDAC(pNv, nv_crtc->crtc, NV_RAMDAC_FP_CONTROL) & 0xCfffffCC;	
 	switch(mode) {
 	case DPMSModeStandby:
 	case DPMSModeSuspend:
@@ -156,9 +164,7 @@ nv_output_dpms(xf86OutputPtr output, int mode)
 	}
 	
 	nvWriteRAMDAC(pNv, nv_crtc->crtc, NV_RAMDAC_FP_CONTROL, fpcontrol);
-	}
     }
-
 }
 
 void nv_output_save_state_ext(xf86OutputPtr output, RIVA_HW_STATE *state)
@@ -169,15 +175,6 @@ void nv_output_save_state_ext(xf86OutputPtr output, RIVA_HW_STATE *state)
     NVOutputRegPtr regp;
 
     regp = &state->dac_reg[nv_output->ramdac];
-
-    state->vpll         = nvReadRAMDAC0(pNv, NV_RAMDAC_VPLL);
-    if(pNv->twoHeads)
-	state->vpll2     = nvReadRAMDAC0(pNv, NV_RAMDAC_VPLL2);
-    if(pNv->twoStagePLL) {
-        state->vpllB    = nvReadRAMDAC0(pNv, NV_RAMDAC_VPLL_B);
-        state->vpll2B   = nvReadRAMDAC0(pNv, NV_RAMDAC_VPLL2_B);
-    }
-    state->pllsel       = nvReadRAMDAC0(pNv, NV_RAMDAC_PLL_SELECT);
     regp->general       = NVOutputReadRAMDAC(output, NV_RAMDAC_GENERAL_CONTROL);
     regp->fp_control    = NVOutputReadRAMDAC(output, NV_RAMDAC_FP_CONTROL);
     regp->debug_0	= NVOutputReadRAMDAC(output, NV_RAMDAC_FP_DEBUG_0);
@@ -192,6 +189,23 @@ void nv_output_save_state_ext(xf86OutputPtr output, RIVA_HW_STATE *state)
     }
     //    regp->crtcSync = NVOutputReadRAMDAC(output, NV_RAMDAC_FP_HCRTC);
     regp->nv10_cursync = NVOutputReadRAMDAC(output, NV_RAMDAC_NV10_CURSYNC);
+
+    if (nv_output->type == OUTPUT_DIGITAL) {
+	int i;
+
+	for (i = 0; i < 7; i++) {
+	    uint32_t ramdac_reg = NV_RAMDAC_FP_HDISP_END + (i * 4);
+	    
+	    regp->fp_horiz_regs[i] = NVOutputReadRAMDAC(output, ramdac_reg);
+	}
+	
+	for (i = 0; i < 7; i++) {
+	    uint32_t ramdac_reg = NV_RAMDAC_FP_VDISP_END + (i * 4);
+	    
+	    regp->fp_vert_regs[i] = NVOutputReadRAMDAC(output, ramdac_reg);
+	}
+    }
+
 }
 
 void nv_output_load_state_ext(xf86OutputPtr output, RIVA_HW_STATE *state)
@@ -208,18 +222,7 @@ void nv_output_load_state_ext(xf86OutputPtr output, RIVA_HW_STATE *state)
     NVOutputWriteRAMDAC(output, NV_RAMDAC_FP_CONTROL, regp->fp_control);
     //    NVOutputWriteRAMDAC(output, NV_RAMDAC_FP_HCRTC, regp->crtcSync);
   
-    nvWriteRAMDAC0(pNv, NV_RAMDAC_PLL_SELECT, state->pllsel);
 
-    ErrorF("writting vpll %08X\n", state->vpll);
-    ErrorF("writting vpll2 %08X\n", state->vpll2);
-    nvWriteRAMDAC0(pNv, NV_RAMDAC_VPLL, state->vpll);
-    if(pNv->twoHeads)
-	nvWriteRAMDAC0(pNv, NV_RAMDAC_VPLL2, state->vpll2);
-    if(pNv->twoStagePLL) {
-	nvWriteRAMDAC0(pNv, NV_RAMDAC_VPLL_B, state->vpllB);
-	nvWriteRAMDAC0(pNv, NV_RAMDAC_VPLL2_B, state->vpll2B);
-    }
-    
     if((pNv->Chipset & 0x0ff0) == CHIPSET_NV11) {
 	NVOutputWriteRAMDAC(output, NV_RAMDAC_DITHER_NV11, regp->dither);
     } else if(pNv->twoHeads) {
@@ -228,6 +231,22 @@ void nv_output_load_state_ext(xf86OutputPtr output, RIVA_HW_STATE *state)
   
     NVOutputWriteRAMDAC(output, NV_RAMDAC_GENERAL_CONTROL, regp->general);
     NVOutputWriteRAMDAC(output, NV_RAMDAC_NV10_CURSYNC, regp->nv10_cursync);
+
+    if (nv_output->type == OUTPUT_DIGITAL) {
+	int i;
+
+	for (i = 0; i < 7; i++) {
+	    uint32_t ramdac_reg = NV_RAMDAC_FP_HDISP_END + (i * 4);
+	    NVOutputWriteRAMDAC(output, ramdac_reg, regp->fp_horiz_regs[i]);
+	}
+	
+	for (i = 0; i < 7; i++) {
+	    uint32_t ramdac_reg = NV_RAMDAC_FP_VDISP_END + (i * 4);
+	    
+	    NVOutputWriteRAMDAC(output, ramdac_reg, regp->fp_vert_regs[i]);
+	}
+    }
+
 }
 
 
@@ -328,8 +347,32 @@ nv_output_mode_set_regs(xf86OutputPtr output, DisplayModePtr mode)
     sv_state = &pNv->SavedReg;
     savep = &sv_state->dac_reg[nv_output->ramdac];
 	    
-    if (nv_output->mon_type == MT_LCD || nv_output->mon_type == MT_DFP)
+    if ((nv_output->type == OUTPUT_PANEL) || (nv_output->type == OUTPUT_DIGITAL))
+    {
 	is_fp = TRUE;
+
+	for (i = 0; i < 7; i++) {
+	    regp->fp_horiz_regs[i] = savep->fp_horiz_regs[i];
+	    regp->fp_vert_regs[i] = savep->fp_vert_regs[i];
+	}
+
+	regp->fp_horiz_regs[REG_DISP_END] = mode->CrtcHDisplay - 1;
+	regp->fp_horiz_regs[REG_DISP_TOTAL] = mode->CrtcHTotal - 1;
+	regp->fp_horiz_regs[REG_DISP_CRTC] = mode->CrtcHDisplay;
+	regp->fp_horiz_regs[REG_DISP_SYNC_START] = mode->CrtcHSyncStart - 1;
+	regp->fp_horiz_regs[REG_DISP_SYNC_END] = mode->CrtcHSyncEnd - 1;
+	regp->fp_horiz_regs[REG_DISP_VALID_START] = mode->CrtcHSkew;
+	regp->fp_horiz_regs[REG_DISP_VALID_END] = mode->CrtcHDisplay - 1;
+	
+	regp->fp_vert_regs[REG_DISP_END] = mode->CrtcVDisplay - 1;
+	regp->fp_vert_regs[REG_DISP_TOTAL] = mode->CrtcVTotal - 1;
+	regp->fp_vert_regs[REG_DISP_CRTC] = mode->CrtcVDisplay;
+	regp->fp_vert_regs[REG_DISP_SYNC_START] = mode->CrtcVSyncStart - 1;
+	regp->fp_vert_regs[REG_DISP_SYNC_END] = mode->CrtcVSyncEnd - 1;
+	regp->fp_vert_regs[REG_DISP_VALID_START] = 0;
+	regp->fp_vert_regs[REG_DISP_VALID_END] = mode->CrtcVDisplay - 1;
+    
+    }
 
     if (pNv->Architecture >= NV_ARCH_10) 
 	regp->nv10_cursync = savep->nv10_cursync | (1<<25);
@@ -385,13 +428,19 @@ nv_output_mode_set_regs(xf86OutputPtr output, DisplayModePtr mode)
 	int two_mon = FALSE;
 
 	for (i = 0; i < config->num_output; i++) {
-	    if (config->output[i] != output) {
-		NVOutputPrivatePtr nv_output2 = config->output[i]->driver_private;	    
-		if ((nv_output2->mon_type == MT_CRT) && (nv_output->mon_type == MT_CRT))
-		    two_crt = TRUE;
-		if ((nv_output2->mon_type>0) && (nv_output->mon_type>0))
-		    two_mon = TRUE;
-	    }
+	    NVOutputPrivatePtr nv_output2 = config->output[i]->driver_private;
+
+	    /* is it this output ?? */
+	    if (config->output[i] == output)
+		continue;
+
+	    /* it the output connected */
+	    if (config->output[i]->crtc == NULL)
+		continue;
+
+	    two_mon = TRUE;
+	    if ((nv_output2->type == OUTPUT_ANALOG) && (nv_output->type == OUTPUT_ANALOG))
+		two_crt = TRUE;
 	}
 
 	if (is_fp == TRUE)
@@ -401,20 +450,6 @@ nv_output_mode_set_regs(xf86OutputPtr output, DisplayModePtr mode)
 
 	if (nv_crtc->crtc == 1 && two_mon)
 	  regp->output |= NV_RAMDAC_OUTPUT_SELECT_CRTC2;
-
-	if (nv_crtc->crtc == 1 && two_mon) {
-	    state->vpll2 = state->pll;
-	    state->vpll2B = state->pllB;
-	    state->pllsel |= (1<<29) | (1<<11);
-	}
-	else {
-	  /* setting this bit affects the TMDS PLL by the looks of it */
-	  //state->pllsel |=  NV_RAMDAC_PLL_SELECT_VCLK_RATIO_DB2
-	  state->pllsel &= ~NV_RAMDAC_PLL_SELECT_VCLK_RATIO_DB2;
-	    state->pllsel |= NV_RAMDAC_PLL_SELECT_PLL_SOURCE_ALL;
-	    state->vpll = state->pll;
-	    state->vpllB = state->pllB;
-	}
 
 	ErrorF("%d: crtc %d output%d: %04X: twocrt %d twomon %d\n", is_fp, nv_crtc->crtc, nv_output->ramdac, regp->output, two_crt, two_mon);
     }
@@ -437,14 +472,27 @@ nv_output_mode_set(xf86OutputPtr output, DisplayModePtr mode,
 static Bool
 nv_ddc_detect(xf86OutputPtr output)
 {
+    /* no use for shared DDC output */
     NVOutputPrivatePtr nv_output = output->driver_private;
-	  
-    return xf86I2CProbeAddress(nv_output->pDDCBus, 0x00A0);
+    xf86MonPtr ddc_mon;
+
+    ddc_mon = xf86OutputGetEDID(output, nv_output->pDDCBus);
+    if (!ddc_mon)
+	return 0;
+
+    if (ddc_mon->features.input_type && (nv_output->type == OUTPUT_ANALOG))
+	return 0;
+
+    if ((!ddc_mon->features.input_type) && (nv_output->type == OUTPUT_DIGITAL))
+	return 0;
+
+    return 1;
 }
 
 static Bool
 nv_crt_load_detect(xf86OutputPtr output)
 {
+    ScrnInfoPtr	pScrn = output->scrn;
     CARD32 reg_output, reg_test_ctrl, temp;
     int present = FALSE;
 	  
@@ -452,7 +500,7 @@ nv_crt_load_detect(xf86OutputPtr output)
     reg_test_ctrl = NVOutputReadRAMDAC(output, NV_RAMDAC_TEST_CONTROL);
 
     NVOutputWriteRAMDAC(output, NV_RAMDAC_TEST_CONTROL, (reg_test_ctrl & ~0x00010000));
-	  
+    
     NVOutputWriteRAMDAC(output, NV_RAMDAC_OUTPUT, (reg_output & 0x0000FEEE));
     usleep(1000);
 	  
@@ -472,26 +520,39 @@ nv_crt_load_detect(xf86OutputPtr output)
 	  
     NVOutputWriteRAMDAC(output, NV_RAMDAC_OUTPUT, reg_output);
     NVOutputWriteRAMDAC(output, NV_RAMDAC_TEST_CONTROL, reg_test_ctrl);
-	  
+    
+    xf86DrvMsg(pScrn->scrnIndex, X_PROBED, "CRT detect returned %d\n",
+	       present);
+
     return present;
 
 }
 
 static xf86OutputStatus
-nv_output_detect(xf86OutputPtr output)
+nv_digital_output_detect(xf86OutputPtr output)
 {
     NVOutputPrivatePtr nv_output = output->driver_private;
 
-    if (nv_output->type == OUTPUT_DVI) {
-	if (nv_ddc_detect(output))
-	    return XF86OutputStatusConnected;
-#if 0
-	if (nv_crt_load_detect(output))
-	    return XF86OutputStatusConnected;
-#endif
-	return XF86OutputStatusDisconnected;
-    }
-    return XF86OutputStatusUnknown;
+    if (nv_ddc_detect(output))
+	return XF86OutputStatusConnected;
+
+    return XF86OutputStatusDisconnected;
+}
+
+
+static xf86OutputStatus
+nv_analog_output_detect(xf86OutputPtr output)
+{
+    NVOutputPrivatePtr nv_output = output->driver_private;
+
+    if (nv_ddc_detect(output))
+	return XF86OutputStatusConnected;
+
+    /* seems a bit flaky on ramdac 1 */
+    if (nv_crt_load_detect(output) && (nv_output->ramdac == 0))
+	return XF86OutputStatusConnected;
+    
+    return XF86OutputStatusDisconnected;
 }
 
 static DisplayModePtr
@@ -505,19 +566,26 @@ nv_output_get_modes(xf86OutputPtr output)
 
 
     ddc_mon = xf86OutputGetEDID(output, nv_output->pDDCBus);
-    xf86OutputSetEDID(output, ddc_mon);
+
     if (ddc_mon == NULL) {
+	xf86OutputSetEDID(output, ddc_mon);
 	return NULL;
     }
 
-    ddc_modes = xf86OutputGetEDIDModes (output);	  
-    /* check if a CRT or DFP */
-    if (ddc_mon->features.input_type)
-	nv_output->mon_type = MT_DFP;
-    else
-	nv_output->mon_type = MT_CRT;
+    if (ddc_mon->features.input_type && (nv_output->type == OUTPUT_ANALOG)) {
+	xf86OutputSetEDID(output, NULL);
+	return NULL;
+    }
 
-    if (nv_output->mon_type == MT_DFP) {
+    if ((!ddc_mon->features.input_type) && (nv_output->type == OUTPUT_DIGITAL)) {
+	xf86OutputSetEDID(output, NULL);
+	return NULL;
+    }
+
+    xf86OutputSetEDID(output, ddc_mon);
+
+    ddc_modes = xf86OutputGetEDIDModes (output);	  
+    if (nv_output->type == OUTPUT_DIGITAL) {
 	nv_output->fpWidth = NVOutputReadRAMDAC(output, NV_RAMDAC_FP_HDISP_END) + 1;
 	nv_output->fpHeight = NVOutputReadRAMDAC(output, NV_RAMDAC_FP_VDISP_END) + 1;
 	nv_output->fpSyncs = NVOutputReadRAMDAC(output, NV_RAMDAC_FP_CONTROL) & 0x30000033;
@@ -550,14 +618,28 @@ nv_output_commit(xf86OutputPtr output)
 
 }
 
-static const xf86OutputFuncsRec nv_output_funcs = {
-    .dpms = nv_output_dpms,
+static const xf86OutputFuncsRec nv_analog_output_funcs = {
+    .dpms = nv_analog_output_dpms,
     .save = nv_output_save,
     .restore = nv_output_restore,
     .mode_valid = nv_output_mode_valid,
     .mode_fixup = nv_output_mode_fixup,
     .mode_set = nv_output_mode_set,
-    .detect = nv_output_detect,
+    .detect = nv_analog_output_detect,
+    .get_modes = nv_output_get_modes,
+    .destroy = nv_output_destroy,
+    .prepare = nv_output_prepare,
+    .commit = nv_output_commit,
+};
+
+static const xf86OutputFuncsRec nv_digital_output_funcs = {
+    .dpms = nv_digital_output_dpms,
+    .save = nv_output_save,
+    .restore = nv_output_restore,
+    .mode_valid = nv_output_mode_valid,
+    .mode_fixup = nv_output_mode_fixup,
+    .mode_set = nv_output_mode_set,
+    .detect = nv_digital_output_detect,
     .get_modes = nv_output_get_modes,
     .destroy = nv_output_destroy,
     .prepare = nv_output_prepare,
@@ -587,7 +669,7 @@ nv_output_lvds_get_modes(xf86OutputPtr output)
 }
 
 static const xf86OutputFuncsRec nv_lvds_output_funcs = {
-    .dpms = nv_output_dpms,
+    .dpms = nv_panel_output_dpms,
     .save = nv_output_save,
     .restore = nv_output_restore,
     .mode_valid = nv_output_mode_valid,
@@ -606,23 +688,21 @@ static const xf86OutputFuncsRec nv_lvds_output_funcs = {
  * Some outputs may not initialize, due to allocation failure or because a
  * controller chip isn't found.
  */
-void NvSetupOutputs(ScrnInfoPtr pScrn)
+
+void Nv20SetupOutputs(ScrnInfoPtr pScrn)
 {
-    int i;
     NVPtr pNv = NVPTR(pScrn);
     xf86OutputPtr	    output;
     NVOutputPrivatePtr    nv_output;
-    char *ddc_name[2] =  { "OUT0", "OUT1" };
-    int   crtc_mask = (1<<0) | (1<<1);
-    int output_type = OUTPUT_DVI;
-    int num_outputs = pNv->twoHeads ? 2 : 1;
+    int i;
+    int num_analog_outputs = pNv->twoHeads ? 2 : 1;
+    int num_digital_outputs = 1;
     char outputname[20];
-    pNv->Television = FALSE;
+    int   crtc_mask = (1<<0) | (1<<1);
 
-    /* work out outputs and type of outputs here */
-    for (i = 0; i<num_outputs; i++) {
-	sprintf(outputname, "OUT%d", i);
-	output = xf86OutputCreate (pScrn, &nv_output_funcs, outputname);
+    for (i = 0 ; i < num_analog_outputs; i++) {
+	sprintf(outputname, "Analog-%d", i);
+	output = xf86OutputCreate (pScrn, &nv_analog_output_funcs, outputname);
 	if (!output)
 	    return;
 	nv_output = xnfcalloc (sizeof (NVOutputPrivateRec), 1);
@@ -631,24 +711,101 @@ void NvSetupOutputs(ScrnInfoPtr pScrn)
 	    xf86OutputDestroy (output);
 	    return;
 	}
-    
+
 	output->driver_private = nv_output;
-	nv_output->type = output_type;
+	nv_output->type = OUTPUT_ANALOG;
 
-	switch(pNv->Chipset & 0x0ff0) {
-	case CHIPSET_NV43:
-		nv_output->ramdac = (1 - i);
-		break;
-	default:
-		nv_output->ramdac = i;
-		break;
-	}
-	//nv_output->ramdac = i;
+	nv_output->ramdac = i;
 
-	NV_I2CInit(pScrn, &nv_output->pDDCBus, i ? 0x36 : 0x3e, ddc_name[i]);
+	nv_output->pDDCBus = pNv->pI2CBus[i];
+
 	output->possible_crtcs = crtc_mask;
+	xf86DrvMsg(pScrn->scrnIndex, X_PROBED, "Adding output %s\n", outputname);
+
     }
 
+    for (i = 0 ; i < num_digital_outputs; i++) {
+	sprintf(outputname, "Digital-%d", i);
+	output = xf86OutputCreate (pScrn, &nv_digital_output_funcs, outputname);
+	if (!output)
+	    return;
+	nv_output = xnfcalloc (sizeof (NVOutputPrivateRec), 1);
+	if (!nv_output)
+	{
+	    xf86OutputDestroy (output);
+	    return;
+	}
+
+	output->driver_private = nv_output;
+	nv_output->type = OUTPUT_DIGITAL;
+
+	nv_output->ramdac = i;
+
+	nv_output->pDDCBus = pNv->pI2CBus[i];
+
+	output->possible_crtcs = crtc_mask;
+	xf86DrvMsg(pScrn->scrnIndex, X_PROBED, "Adding output %s\n", outputname);
+    }
+
+}
+
+void Nv40SetupOutputs(ScrnInfoPtr pScrn)
+{
+  /* we setup the outputs up from the BIOS table */
+
+}
+
+struct nv_i2c_struct {
+    int reg;
+    char *name;
+} nv_i2c_buses[] = { 
+    { 0x3e, "DDC1" },
+    { 0x36, "DDC2" },
+    { 0x50, "TV" },
+};
+
+
+void NvSetupOutputs(ScrnInfoPtr pScrn)
+{
+    int i;
+    NVPtr pNv = NVPTR(pScrn);
+    xf86OutputPtr	    output;
+    NVOutputPrivatePtr    nv_output;
+
+    int num_outputs = pNv->twoHeads ? 2 : 1;
+    char outputname[20];
+    pNv->Television = FALSE;
+
+    /* add the 3 I2C buses */
+    for (i = 0; i < NV_I2C_BUSES; i++) {
+        NV_I2CInit(pScrn, &pNv->pI2CBus[i], nv_i2c_buses[i].reg, nv_i2c_buses[i].name);
+    }
+	
+    switch(pNv->Chipset & 0x0ff0) {
+    case CHIPSET_NV04:
+    case CHIPSET_NV10:
+    case CHIPSET_NV11:
+    case CHIPSET_NV15:
+    case CHIPSET_NV17:
+    case CHIPSET_NV18:
+    case CHIPSET_NFORCE:
+    case CHIPSET_NFORCE2:
+    case CHIPSET_NV20:
+    case CHIPSET_NV25:
+    case CHIPSET_NV28:
+    case CHIPSET_NV30:
+    case CHIPSET_NV31:
+    case CHIPSET_NV34:
+    case CHIPSET_NV35:
+    case CHIPSET_NV36:
+	Nv20SetupOutputs(pScrn);
+	break;
+    default:
+	Nv40SetupOutputs(pScrn);
+	break;
+    }
+
+#if 0
     if (pNv->Mobile) {
 	output = xf86OutputCreate(pScrn, &nv_output_funcs, OutputType[OUTPUT_LVDS]);
 	if (!output)
@@ -665,6 +822,7 @@ void NvSetupOutputs(ScrnInfoPtr pScrn)
 
 	output->possible_crtcs = i ? 1 : crtc_mask;
     }
+#endif
 }
 
 

@@ -70,26 +70,16 @@
 #define SetBit(n) (1<<(n))
 #define Set8Bits(value) ((value)&0xff)
 
-typedef enum
-{
-    OUTPUT_NONE,
-    OUTPUT_VGA,
-    OUTPUT_DVI,
-    OUTPUT_LVDS,
-    OUTPUT_STV,
-    OUTPUT_CTV,
-} NVOutputType;
+#define NV_I2C_BUSES 3
 
 typedef enum
 {
-    MT_UNKNOWN = -1,
-    MT_NONE    = 0,
-    MT_CRT     = 1,
-    MT_LCD     = 2,
-    MT_DFP     = 3,
-    MT_CTV     = 4,
-    MT_STV     = 5
-} NVMonitorType;
+    OUTPUT_NONE,
+    OUTPUT_ANALOG,
+    OUTPUT_DIGITAL,
+    OUTPUT_PANEL,
+    OUTPUT_TV,
+} NVOutputType;
 
 typedef struct {
     int bitsPerPixel;
@@ -112,8 +102,6 @@ typedef struct _nv_crtc_reg
     CARD32 unk830;
     CARD32 unk834;
     CARD32 head;
-    CARD32 fp_horiz_regs[7];
-    CARD32 fp_vert_regs[7];
 } NVCrtcRegRec, *NVCrtcRegPtr;
 
 typedef struct _nv_output_reg
@@ -126,11 +114,12 @@ typedef struct _nv_output_reg
     CARD32 nv10_cursync;
     CARD32 output;
     CARD32 debug_0;
+    CARD32 fp_horiz_regs[7];
+    CARD32 fp_vert_regs[7];
 } NVOutputRegRec, *NVOutputRegPtr;
 
 typedef struct _riva_hw_state
 {
-
     CARD32 arbitration0;
     CARD32 arbitration1;
     CARD32 pll;
@@ -166,7 +155,6 @@ typedef struct _NVOutputPrivateRec {
         int ramdac;
         I2CBusPtr		    pDDCBus;
         NVOutputType type;
-        NVMonitorType mon_type;
         CARD32 fpSyncs;
         CARD32 fpWidth;
         CARD32 fpHeight;
@@ -312,6 +300,9 @@ typedef struct _NVRec {
     drmVersionPtr       pKernelDRMVersion;
 
   CreateScreenResourcesProcPtr    CreateScreenResources;
+
+    /* we know about 3 i2c buses */
+    I2CBusPtr           pI2CBus[3];
 } NVRec;
 
 #define NVPTR(p) ((NVPtr)((p)->driverPrivate))
