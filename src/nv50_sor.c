@@ -34,20 +34,20 @@
 #include "nv50_output.h"
 
 static void
-G80SorSetPClk(xf86OutputPtr output, int pclk)
+NV50SorSetPClk(xf86OutputPtr output, int pclk)
 {
     NVPtr pNv = NVPTR(output->scrn);
-    G80OutputPrivPtr pPriv = output->driver_private;
+    NV50OutputPrivPtr pPriv = output->driver_private;
     const int orOff = 0x800 * pPriv->or;
 
     pNv->REGS[(0x00614300+orOff)/4] = (pclk > 165000) ? 0x101 : 0;
 }
 
 static void
-G80SorDPMSSet(xf86OutputPtr output, int mode)
+NV50SorDPMSSet(xf86OutputPtr output, int mode)
 {
     NVPtr pNv = NVPTR(output->scrn);
-    G80OutputPrivPtr pPriv = output->driver_private;
+    NV50OutputPrivPtr pPriv = output->driver_private;
     const int off = 0x800 * pPriv->or;
     CARD32 tmp;
 
@@ -65,11 +65,11 @@ G80SorDPMSSet(xf86OutputPtr output, int mode)
 }
 
 static void
-G80SorModeSet(xf86OutputPtr output, DisplayModePtr mode,
+NV50SorModeSet(xf86OutputPtr output, DisplayModePtr mode,
               DisplayModePtr adjusted_mode)
 {
     ScrnInfoPtr pScrn = output->scrn;
-    G80OutputPrivPtr pPriv = output->driver_private;
+    NV50OutputPrivPtr pPriv = output->driver_private;
     const int sorOff = 0x40 * pPriv->or;
 
     if(!adjusted_mode) {
@@ -79,58 +79,58 @@ G80SorModeSet(xf86OutputPtr output, DisplayModePtr mode,
     }
 
     // This wouldn't be necessary, but the server is stupid and calls
-    // G80SorDPMSSet after the output is disconnected, even though the hardware
+    // NV50SorDPMSSet after the output is disconnected, even though the hardware
     // turns it off automatically.
-    G80SorDPMSSet(output, DPMSModeOn);
+    NV50SorDPMSSet(output, DPMSModeOn);
 
     C(0x00000600 + sorOff,
-        (G80CrtcGetHead(output->crtc) == HEAD0 ? 1 : 2) |
+        (NV50CrtcGetHead(output->crtc) == HEAD0 ? 1 : 2) |
         (adjusted_mode->Clock > 165000 ? 0x500 : 0x100) |
         ((adjusted_mode->Flags & V_NHSYNC) ? 0x1000 : 0) |
         ((adjusted_mode->Flags & V_NVSYNC) ? 0x2000 : 0));
 }
 
 static xf86OutputStatus
-G80SorDetect(xf86OutputPtr output)
+NV50SorDetect(xf86OutputPtr output)
 {
 
-    G80OutputPrivPtr pPriv = output->driver_private;
+    NV50OutputPrivPtr pPriv = output->driver_private;
 
     /* Assume physical status isn't going to change before the BlockHandler */
     if(pPriv->cached_status != XF86OutputStatusUnknown)
         return pPriv->cached_status;
 
-    G80OutputPartnersDetect(pPriv->partner, output, pPriv->i2c);
+    NV50OutputPartnersDetect(pPriv->partner, output, pPriv->i2c);
     return pPriv->cached_status;
 }
 
 static void
-G80SorDestroy(xf86OutputPtr output)
+NV50SorDestroy(xf86OutputPtr output)
 {
-    G80OutputDestroy(output);
+    NV50OutputDestroy(output);
 
     xfree(output->driver_private);
     output->driver_private = NULL;
 }
 
-static const xf86OutputFuncsRec G80SorOutputFuncs = {
-    .dpms = G80SorDPMSSet,
+static const xf86OutputFuncsRec NV50SorOutputFuncs = {
+    .dpms = NV50SorDPMSSet,
     .save = NULL,
     .restore = NULL,
-    .mode_valid = G80OutputModeValid,
-    .mode_fixup = G80OutputModeFixup,
-    .prepare = G80OutputPrepare,
-    .commit = G80OutputCommit,
-    .mode_set = G80SorModeSet,
-    .detect = G80SorDetect,
-    .get_modes = G80OutputGetDDCModes,
-    .destroy = G80SorDestroy,
+    .mode_valid = NV50OutputModeValid,
+    .mode_fixup = NV50OutputModeFixup,
+    .prepare = NV50OutputPrepare,
+    .commit = NV50OutputCommit,
+    .mode_set = NV50SorModeSet,
+    .detect = NV50SorDetect,
+    .get_modes = NV50OutputGetDDCModes,
+    .destroy = NV50SorDestroy,
 };
 
 xf86OutputPtr
-G80CreateSor(ScrnInfoPtr pScrn, ORNum or)
+NV50CreateSor(ScrnInfoPtr pScrn, ORNum or)
 {
-    G80OutputPrivPtr pPriv = xnfcalloc(sizeof(*pPriv), 1);
+    NV50OutputPrivPtr pPriv = xnfcalloc(sizeof(*pPriv), 1);
     xf86OutputPtr output;
     char orName[5];
 
@@ -138,12 +138,12 @@ G80CreateSor(ScrnInfoPtr pScrn, ORNum or)
         return FALSE;
 
     snprintf(orName, 5, "DVI%i", or);
-    output = xf86OutputCreate(pScrn, &G80SorOutputFuncs, orName);
+    output = xf86OutputCreate(pScrn, &NV50SorOutputFuncs, orName);
 
     pPriv->type = SOR;
     pPriv->or = or;
     pPriv->cached_status = XF86OutputStatusUnknown;
-    pPriv->set_pclk = G80SorSetPClk;
+    pPriv->set_pclk = NV50SorSetPClk;
     output->driver_private = pPriv;
     output->interlaceAllowed = TRUE;
     output->doubleScanAllowed = TRUE;

@@ -3,20 +3,20 @@
 
 #include "nv50_type.h"
 
-Bool G80DispPreInit(ScrnInfoPtr);
-Bool G80DispInit(ScrnInfoPtr);
-void G80DispShutdown(ScrnInfoPtr);
+Bool NV50DispPreInit(ScrnInfoPtr);
+Bool NV50DispInit(ScrnInfoPtr);
+void NV50DispShutdown(ScrnInfoPtr);
 
-void G80DispCommand(ScrnInfoPtr, CARD32 addr, CARD32 data);
-#define C(mthd, data) G80DispCommand(pScrn, (mthd), (data))
+void NV50DispCommand(ScrnInfoPtr, CARD32 addr, CARD32 data);
+#define C(mthd, data) NV50DispCommand(pScrn, (mthd), (data))
 
-Head G80CrtcGetHead(xf86CrtcPtr);
+Head NV50CrtcGetHead(xf86CrtcPtr);
 
-void G80CrtcBlankScreen(xf86CrtcPtr, Bool blank);
-void G80CrtcEnableCursor(xf86CrtcPtr, Bool update);
-void G80CrtcDisableCursor(xf86CrtcPtr, Bool update);
-void G80CrtcSetCursorPosition(xf86CrtcPtr, int x, int y);
+void NV50CrtcBlankScreen(xf86CrtcPtr, Bool blank);
+void NV50CrtcEnableCursor(xf86CrtcPtr, Bool update);
+void NV50CrtcDisableCursor(xf86CrtcPtr, Bool update);
+void NV50CrtcSetCursorPosition(xf86CrtcPtr, int x, int y);
 
-void G80DispCreateCrtcs(ScrnInfoPtr pScrn);
+void NV50DispCreateCrtcs(ScrnInfoPtr pScrn);
 
 #endif

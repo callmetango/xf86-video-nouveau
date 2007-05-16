@@ -36,10 +36,10 @@
 
 #define CURSOR_PTR ((CARD32*)pNv->Cursor->map)
 
-void G80SetCursorPosition(xf86CrtcPtr crtc, int x, int y)
+void NV50SetCursorPosition(xf86CrtcPtr crtc, int x, int y)
 {
     NVPtr pNv = NVPTR(crtc->scrn);
-    const int headOff = 0x1000*G80CrtcGetHead(crtc);
+    const int headOff = 0x1000*NV50CrtcGetHead(crtc);
 
     x &= 0xffff;
     y &= 0xffff;
@@ -47,7 +47,7 @@ void G80SetCursorPosition(xf86CrtcPtr crtc, int x, int y)
     pNv->REGS[(0x00647080 + headOff)/4] = 0;
 }
 
-void G80LoadCursorARGB(xf86CrtcPtr crtc, CARD32 *src)
+void NV50LoadCursorARGB(xf86CrtcPtr crtc, CARD32 *src)
 {
     NVPtr pNv = NVPTR(crtc->scrn);
     CARD32 *dst = CURSOR_PTR;
@@ -56,7 +56,7 @@ void G80LoadCursorARGB(xf86CrtcPtr crtc, CARD32 *src)
     memcpy(dst, src, 64 * 64 * 4);
 }
 
-Bool G80CursorAcquire(ScrnInfoPtr pScrn)
+Bool NV50CursorAcquire(ScrnInfoPtr pScrn)
 {
     NVPtr pNv = NVPTR(pScrn);
     xf86CrtcConfigPtr xf86_config = XF86_CRTC_CONFIG_PTR(pScrn);
@@ -66,7 +66,7 @@ Bool G80CursorAcquire(ScrnInfoPtr pScrn)
 
     /* Initialize the cursor on each head */
     for(i = 0; i < xf86_config->num_crtc; i++) {
-        const int headOff = 0x10 * G80CrtcGetHead(xf86_config->crtc[i]);
+        const int headOff = 0x10 * NV50CrtcGetHead(xf86_config->crtc[i]);
 
         pNv->REGS[(0x00610270+headOff)/4] = 0x2000;
         while(pNv->REGS[(0x00610270+headOff)/4] & 0x30000);
@@ -78,7 +78,7 @@ Bool G80CursorAcquire(ScrnInfoPtr pScrn)
     return TRUE;
 }
 
-void G80CursorRelease(ScrnInfoPtr pScrn)
+void NV50CursorRelease(ScrnInfoPtr pScrn)
 {
     NVPtr pNv = NVPTR(pScrn);
     xf86CrtcConfigPtr xf86_config = XF86_CRTC_CONFIG_PTR(pScrn);
@@ -88,14 +88,14 @@ void G80CursorRelease(ScrnInfoPtr pScrn)
 
     /* Release the cursor on each head */
     for(i = 0; i < xf86_config->num_crtc; i++) {
-        const int headOff = 0x10 * G80CrtcGetHead(xf86_config->crtc[i]);
+        const int headOff = 0x10 * NV50CrtcGetHead(xf86_config->crtc[i]);
 
         pNv->REGS[(0x00610270+headOff)/4] = 0;
         while(pNv->REGS[(0x00610270+headOff)/4] & 0x30000);
     }
 }
 
-Bool G80CursorInit(ScreenPtr pScreen)
+Bool NV50CursorInit(ScreenPtr pScreen)
 {
     return xf86_cursors_init(pScreen, 64, 64,
             HARDWARE_CURSOR_TRUECOLOR_AT_8BPP |

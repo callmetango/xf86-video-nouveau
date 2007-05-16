@@ -37,19 +37,19 @@
 #include "nv50_display.h"
 #include "nv50_output.h"
 
-typedef struct G80CrtcPrivRec {
+typedef struct NV50CrtcPrivRec {
     Head head;
     int pclk; /* Target pixel clock in kHz */
     Bool cursorVisible;
-} G80CrtcPrivRec, *G80CrtcPrivPtr;
+} NV50CrtcPrivRec, *NV50CrtcPrivPtr;
 
-static void G80CrtcShowHideCursor(xf86CrtcPtr crtc, Bool show, Bool update);
+static void NV50CrtcShowHideCursor(xf86CrtcPtr crtc, Bool show, Bool update);
 
 /*
  * PLL calculation.  pclk is in kHz.
  */
 static void
-G80CalcPLL(float pclk, int *pNA, int *pMA, int *pNB, int *pMB, int *pP)
+NV50CalcPLL(float pclk, int *pNA, int *pMA, int *pNB, int *pMB, int *pP)
 {
     const float refclk = 27000.0f;
     const float minVcoA = 100000;
@@ -145,10 +145,10 @@ G80CalcPLL(float pclk, int *pNA, int *pMA, int *pNB, int *pMB, int *pP)
 }
 
 static void
-G80CrtcSetPClk(xf86CrtcPtr crtc)
+NV50CrtcSetPClk(xf86CrtcPtr crtc)
 {
     NVPtr pNv = NVPTR(crtc->scrn);
-    G80CrtcPrivPtr pPriv = crtc->driver_private;
+    NV50CrtcPrivPtr pPriv = crtc->driver_private;
     xf86CrtcConfigPtr xf86_config = XF86_CRTC_CONFIG_PTR(crtc->scrn);
     const int headOff = 0x800 * pPriv->head;
     int lo_n, lo_m, hi_n, hi_m, p, i;
@@ -159,7 +159,7 @@ G80CrtcSetPClk(xf86CrtcPtr crtc)
     lo &= 0xff00ff00;
     hi &= 0x8000ff00;
 
-    G80CalcPLL(pPriv->pclk, &lo_n, &lo_m, &hi_n, &hi_m, &p);
+    NV50CalcPLL(pPriv->pclk, &lo_n, &lo_m, &hi_n, &hi_m, &p);
 
     lo |= (lo_m << 16) | lo_n;
     hi |= (p << 28) | (hi_m << 16) | hi_n;
@@ -172,12 +172,12 @@ G80CrtcSetPClk(xf86CrtcPtr crtc)
 
         if(output->crtc != crtc)
             continue;
-        G80OutputSetPClk(output, pPriv->pclk);
+        NV50OutputSetPClk(output, pPriv->pclk);
     }
 }
 
 void
-G80DispCommand(ScrnInfoPtr pScrn, CARD32 addr, CARD32 data)
+NV50DispCommand(ScrnInfoPtr pScrn, CARD32 addr, CARD32 data)
 {
     NVPtr pNv = NVPTR(pScrn);
 
@@ -196,10 +196,10 @@ G80DispCommand(ScrnInfoPtr pScrn, CARD32 addr, CARD32 data)
                 for(i = 0; i < xf86_config->num_crtc; i++)
                 {
                     xf86CrtcPtr crtc = xf86_config->crtc[i];
-                    G80CrtcPrivPtr pPriv = crtc->driver_private;
+                    NV50CrtcPrivPtr pPriv = crtc->driver_private;
 
                     if(r & (0x200 << pPriv->head))
-                        G80CrtcSetPClk(crtc);
+                        NV50CrtcSetPClk(crtc);
                 }
             }
 
@@ -210,14 +210,14 @@ G80DispCommand(ScrnInfoPtr pScrn, CARD32 addr, CARD32 data)
 }
 
 Head
-G80CrtcGetHead(xf86CrtcPtr crtc)
+NV50CrtcGetHead(xf86CrtcPtr crtc)
 {
-    G80CrtcPrivPtr pPriv = crtc->driver_private;
+    NV50CrtcPrivPtr pPriv = crtc->driver_private;
     return pPriv->head;
 }
 
 Bool
-G80DispPreInit(ScrnInfoPtr pScrn)
+NV50DispPreInit(ScrnInfoPtr pScrn)
 {
     NVPtr pNv = NVPTR(pScrn);
 
@@ -254,7 +254,7 @@ G80DispPreInit(ScrnInfoPtr pScrn)
 }
 
 Bool
-G80DispInit(ScrnInfoPtr pScrn)
+NV50DispInit(ScrnInfoPtr pScrn)
 {
     NVPtr pNv = NVPTR(pScrn);
 
@@ -281,7 +281,7 @@ G80DispInit(ScrnInfoPtr pScrn)
 }
 
 void
-G80DispShutdown(ScrnInfoPtr pScrn)
+NV50DispShutdown(ScrnInfoPtr pScrn)
 {
     NVPtr pNv = NVPTR(pScrn);
     xf86CrtcConfigPtr xf86_config = XF86_CRTC_CONFIG_PTR(pScrn);
@@ -290,7 +290,7 @@ G80DispShutdown(ScrnInfoPtr pScrn)
     for(i = 0; i < xf86_config->num_crtc; i++) {
         xf86CrtcPtr crtc = xf86_config->crtc[i];
 
-        G80CrtcBlankScreen(crtc, TRUE);
+        NV50CrtcBlankScreen(crtc, TRUE);
     }
 
     C(0x00000080, 0);
@@ -299,7 +299,7 @@ G80DispShutdown(ScrnInfoPtr pScrn)
         xf86CrtcPtr crtc = xf86_config->crtc[i];
 
         if(crtc->enabled) {
-            const CARD32 mask = 4 << G80CrtcGetHead(crtc);
+            const CARD32 mask = 4 << NV50CrtcGetHead(crtc);
 
             pNv->REGS[0x00610024/4] = mask;
             while(!(pNv->REGS[0x00610024/4] & mask));
@@ -312,7 +312,7 @@ G80DispShutdown(ScrnInfoPtr pScrn)
 }
 
 static Bool
-G80CrtcModeFixup(xf86CrtcPtr crtc,
+NV50CrtcModeFixup(xf86CrtcPtr crtc,
                  DisplayModePtr mode, DisplayModePtr adjusted_mode)
 {
     // TODO: Fix up the mode here
@@ -320,16 +320,16 @@ G80CrtcModeFixup(xf86CrtcPtr crtc,
 }
 
 static void
-G80CrtcModeSet(xf86CrtcPtr crtc, DisplayModePtr mode,
+NV50CrtcModeSet(xf86CrtcPtr crtc, DisplayModePtr mode,
                DisplayModePtr adjusted_mode, int x, int y)
 {
     ScrnInfoPtr pScrn = crtc->scrn;
-    G80CrtcPrivPtr pPriv = crtc->driver_private;
+    NV50CrtcPrivPtr pPriv = crtc->driver_private;
     const int HDisplay = mode->HDisplay, VDisplay = mode->VDisplay;
-    const int headOff = 0x400 * G80CrtcGetHead(crtc);
+    const int headOff = 0x400 * NV50CrtcGetHead(crtc);
     int interlaceDiv, fudge;
 
-    // TODO: Use adjusted_mode and fix it up in G80CrtcModeFixup
+    // TODO: Use adjusted_mode and fix it up in NV50CrtcModeFixup
     pPriv->pclk = mode->Clock;
 
     /* Magic mode timing fudge factor */
@@ -377,19 +377,19 @@ G80CrtcModeSet(xf86CrtcPtr crtc, DisplayModePtr mode,
     C(0x000008D8 + headOff, mode->CrtcVDisplay << 16 | mode->CrtcHDisplay);
     C(0x000008DC + headOff, mode->CrtcVDisplay << 16 | mode->CrtcHDisplay);
 
-    G80CrtcBlankScreen(crtc, FALSE);
+    NV50CrtcBlankScreen(crtc, FALSE);
 }
 
 void
-G80CrtcBlankScreen(xf86CrtcPtr crtc, Bool blank)
+NV50CrtcBlankScreen(xf86CrtcPtr crtc, Bool blank)
 {
     ScrnInfoPtr pScrn = crtc->scrn;
     NVPtr pNv = NVPTR(pScrn);
-    G80CrtcPrivPtr pPriv = crtc->driver_private;
+    NV50CrtcPrivPtr pPriv = crtc->driver_private;
     const int headOff = 0x400 * pPriv->head;
 
     if(blank) {
-        G80CrtcShowHideCursor(crtc, FALSE, FALSE);
+        NV50CrtcShowHideCursor(crtc, FALSE, FALSE);
 
         C(0x00000840 + headOff, 0);
         C(0x00000844 + headOff, 0);
@@ -412,7 +412,7 @@ G80CrtcBlankScreen(xf86CrtcPtr crtc, Bool blank)
         if(pNv->_Chipset != 0x50)
             C(0x0000089C + headOff, 1);
         if(pPriv->cursorVisible)
-            G80CrtcShowHideCursor(crtc, TRUE, FALSE);
+            NV50CrtcShowHideCursor(crtc, TRUE, FALSE);
         C(0x00000840 + headOff, pScrn->depth == 8 ? 0x80000000 : 0xc0000000);
         C(0x00000844 + headOff, (pNv->RamAmountKBytes * 1024 - 0x5000) >> 8);
         if(pNv->_Chipset != 0x50)
@@ -422,16 +422,16 @@ G80CrtcBlankScreen(xf86CrtcPtr crtc, Bool blank)
 }
 
 void
-G80CrtcDPMSSet(xf86CrtcPtr crtc, int mode)
+NV50CrtcDPMSSet(xf86CrtcPtr crtc, int mode)
 {
 }
 
 /******************************** Cursor stuff ********************************/
-static void G80CrtcShowHideCursor(xf86CrtcPtr crtc, Bool show, Bool update)
+static void NV50CrtcShowHideCursor(xf86CrtcPtr crtc, Bool show, Bool update)
 {
     ScrnInfoPtr pScrn = crtc->scrn;
-    G80CrtcPrivPtr pPriv = crtc->driver_private;
-    const int headOff = 0x400 * G80CrtcGetHead(crtc);
+    NV50CrtcPrivPtr pPriv = crtc->driver_private;
+    const int headOff = 0x400 * NV50CrtcGetHead(crtc);
 
     C(0x00000880 + headOff, show ? 0x85000000 : 0x5000000);
     if(update) {
@@ -440,26 +440,26 @@ static void G80CrtcShowHideCursor(xf86CrtcPtr crtc, Bool show, Bool update)
     }
 }
 
-void G80CrtcShowCursor(xf86CrtcPtr crtc)
+void NV50CrtcShowCursor(xf86CrtcPtr crtc)
 {
-    G80CrtcShowHideCursor(crtc, TRUE, TRUE);
+    NV50CrtcShowHideCursor(crtc, TRUE, TRUE);
 }
 
-void G80CrtcHideCursor(xf86CrtcPtr crtc)
+void NV50CrtcHideCursor(xf86CrtcPtr crtc)
 {
-    G80CrtcShowHideCursor(crtc, FALSE, TRUE);
+    NV50CrtcShowHideCursor(crtc, FALSE, TRUE);
 }
 
 /******************************** CRTC stuff ********************************/
 
 static Bool
-G80CrtcLock(xf86CrtcPtr crtc)
+NV50CrtcLock(xf86CrtcPtr crtc)
 {
     return FALSE;
 }
 
 static void
-G80CrtcPrepare(xf86CrtcPtr crtc)
+NV50CrtcPrepare(xf86CrtcPtr crtc)
 {
     ScrnInfoPtr pScrn = crtc->scrn;
     xf86CrtcConfigPtr xf86_config = XF86_CRTC_CONFIG_PTR(pScrn);
@@ -474,7 +474,7 @@ G80CrtcPrepare(xf86CrtcPtr crtc)
 }
 
 static void
-G80CrtcCommit(xf86CrtcPtr crtc)
+NV50CrtcCommit(xf86CrtcPtr crtc)
 {
     ScrnInfoPtr pScrn = crtc->scrn;
     xf86CrtcConfigPtr xf86_config = XF86_CRTC_CONFIG_PTR(crtc->scrn);
@@ -486,50 +486,50 @@ G80CrtcCommit(xf86CrtcPtr crtc)
 
         if(output->crtc)
             /* XXXagp: This assumes that xf86_config->crtc[i] is HEADi */
-            crtc_mask |= 1 << G80CrtcGetHead(output->crtc);
+            crtc_mask |= 1 << NV50CrtcGetHead(output->crtc);
     }
 
     for(i = 0; i < xf86_config->num_crtc; i++)
         if(!((1 << i) & crtc_mask))
-            G80CrtcBlankScreen(xf86_config->crtc[i], TRUE);
+            NV50CrtcBlankScreen(xf86_config->crtc[i], TRUE);
 
     C(0x00000080, 0);
 }
 
-static const xf86CrtcFuncsRec g80_crtc_funcs = {
-    .dpms = G80CrtcDPMSSet,
+static const xf86CrtcFuncsRec nv50_crtc_funcs = {
+    .dpms = NV50CrtcDPMSSet,
     .save = NULL,
     .restore = NULL,
-    .lock = G80CrtcLock,
+    .lock = NV50CrtcLock,
     .unlock = NULL,
-    .mode_fixup = G80CrtcModeFixup,
-    .prepare = G80CrtcPrepare,
-    .mode_set = G80CrtcModeSet,
-    // .gamma_set = G80DispGammaSet,
-    .commit = G80CrtcCommit,
+    .mode_fixup = NV50CrtcModeFixup,
+    .prepare = NV50CrtcPrepare,
+    .mode_set = NV50CrtcModeSet,
+    // .gamma_set = NV50DispGammaSet,
+    .commit = NV50CrtcCommit,
     .shadow_create = NULL,
     .shadow_destroy = NULL,
-    .set_cursor_position = G80SetCursorPosition,
-    .show_cursor = G80CrtcShowCursor,
-    .hide_cursor = G80CrtcHideCursor,
-    .load_cursor_argb = G80LoadCursorARGB,
+    .set_cursor_position = NV50SetCursorPosition,
+    .show_cursor = NV50CrtcShowCursor,
+    .hide_cursor = NV50CrtcHideCursor,
+    .load_cursor_argb = NV50LoadCursorARGB,
     .destroy = NULL,
 };
 
 void
-G80DispCreateCrtcs(ScrnInfoPtr pScrn)
+NV50DispCreateCrtcs(ScrnInfoPtr pScrn)
 {
     Head head;
     xf86CrtcPtr crtc;
-    G80CrtcPrivPtr g80_crtc;
+    NV50CrtcPrivPtr nv50_crtc;
 
     /* Create a "crtc" object for each head */
     for(head = HEAD0; head <= HEAD1; head++) {
-        crtc = xf86CrtcCreate(pScrn, &g80_crtc_funcs);
+        crtc = xf86CrtcCreate(pScrn, &nv50_crtc_funcs);
         if(!crtc) return;
 
-        g80_crtc = xnfcalloc(sizeof(*g80_crtc), 1);
-        g80_crtc->head = head;
-        crtc->driver_private = g80_crtc;
+        nv50_crtc = xnfcalloc(sizeof(*nv50_crtc), 1);
+        nv50_crtc->head = head;
+        crtc->driver_private = nv50_crtc;
     }
 }

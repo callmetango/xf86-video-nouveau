@@ -52,7 +52,7 @@ NV50GetVBIOSImage(NVPtr pNv)
 	return (unsigned const char *)VBIOS;
 }
 
-static Bool G80ReadPortMapping(int scrnIndex, NVPtr pNv)
+static Bool NV50ReadPortMapping(int scrnIndex, NVPtr pNv)
 {
     unsigned const char *VBIOS;
     unsigned char *table2;
@@ -132,7 +132,7 @@ fail:
     return FALSE;
 }
 
-static void G80_I2CPutBits(I2CBusPtr b, int clock, int data)
+static void NV50_I2CPutBits(I2CBusPtr b, int clock, int data)
 {
     NVPtr pNv = NVPTR(xf86Screens[b->scrnIndex]);
     const int off = b->DriverPrivate.val * 0x18;
@@ -140,7 +140,7 @@ static void G80_I2CPutBits(I2CBusPtr b, int clock, int data)
     pNv->REGS[(0x0000E138+off)/4] = 4 | clock | data << 1;
 }
 
-static void G80_I2CGetBits(I2CBusPtr b, int *clock, int *data)
+static void NV50_I2CGetBits(I2CBusPtr b, int *clock, int *data)
 {
     NVPtr pNv = NVPTR(xf86Screens[b->scrnIndex]);
     const int off = b->DriverPrivate.val * 0x18;
@@ -152,7 +152,7 @@ static void G80_I2CGetBits(I2CBusPtr b, int *clock, int *data)
 }
 
 static I2CBusPtr
-G80I2CInit(ScrnInfoPtr pScrn, const char *name, const int port)
+NV50I2CInit(ScrnInfoPtr pScrn, const char *name, const int port)
 {
     I2CBusPtr i2c;
 
@@ -162,8 +162,8 @@ G80I2CInit(ScrnInfoPtr pScrn, const char *name, const int port)
 
     i2c->BusName = strdup(name);
     i2c->scrnIndex = pScrn->scrnIndex;
-    i2c->I2CPutBits = G80_I2CPutBits;
-    i2c->I2CGetBits = G80_I2CGetBits;
+    i2c->I2CPutBits = NV50_I2CPutBits;
+    i2c->I2CGetBits = NV50_I2CGetBits;
     i2c->ByteTimeout = 2200; /* VESA DDC spec 3 p. 43 (+10 %) */
     i2c->StartTimeout = 550;
     i2c->BitTimeout = 40;
@@ -180,14 +180,14 @@ G80I2CInit(ScrnInfoPtr pScrn, const char *name, const int port)
 }
 
 void
-G80OutputSetPClk(xf86OutputPtr output, int pclk)
+NV50OutputSetPClk(xf86OutputPtr output, int pclk)
 {
-    G80OutputPrivPtr pPriv = output->driver_private;
+    NV50OutputPrivPtr pPriv = output->driver_private;
     pPriv->set_pclk(output, pclk);
 }
 
 int
-G80OutputModeValid(xf86OutputPtr output, DisplayModePtr mode)
+NV50OutputModeValid(xf86OutputPtr output, DisplayModePtr mode)
 {
     if(mode->Clock > 400000 || mode->Clock < 25000)
         return MODE_CLOCK_RANGE;
@@ -196,19 +196,19 @@ G80OutputModeValid(xf86OutputPtr output, DisplayModePtr mode)
 }
 
 Bool
-G80OutputModeFixup(xf86OutputPtr output, DisplayModePtr mode,
+NV50OutputModeFixup(xf86OutputPtr output, DisplayModePtr mode,
                    DisplayModePtr adjusted_mode)
 {
     return TRUE;
 }
 
 void
-G80OutputPrepare(xf86OutputPtr output)
+NV50OutputPrepare(xf86OutputPtr output)
 {
 }
 
 void
-G80OutputCommit(xf86OutputPtr output)
+NV50OutputCommit(xf86OutputPtr output)
 {
 }
 
@@ -244,14 +244,14 @@ ProbeDDC(I2CBusPtr i2c)
  * present) to see if the display is connected via VGA.  Sets the cached status
  * of both outputs.  The status is marked dirty again in the BlockHandler.
  */
-void G80OutputPartnersDetect(xf86OutputPtr dac, xf86OutputPtr sor, I2CBusPtr i2c)
+void NV50OutputPartnersDetect(xf86OutputPtr dac, xf86OutputPtr sor, I2CBusPtr i2c)
 {
     xf86MonPtr monInfo = ProbeDDC(i2c);
     xf86OutputPtr connected = NULL;
-    Bool load = dac && G80DacLoadDetect(dac);
+    Bool load = dac && NV50DacLoadDetect(dac);
 
     if(dac) {
-        G80OutputPrivPtr pPriv = dac->driver_private;
+        NV50OutputPrivPtr pPriv = dac->driver_private;
 
         if(load) {
             pPriv->cached_status = XF86OutputStatusConnected;
@@ -262,7 +262,7 @@ void G80OutputPartnersDetect(xf86OutputPtr dac, xf86OutputPtr sor, I2CBusPtr i2c
     }
 
     if(sor) {
-        G80OutputPrivPtr pPriv = sor->driver_private;
+        NV50OutputPrivPtr pPriv = sor->driver_private;
 
         if(monInfo && !load) {
             pPriv->cached_status = XF86OutputStatusConnected;
@@ -277,22 +277,22 @@ void G80OutputPartnersDetect(xf86OutputPtr dac, xf86OutputPtr sor, I2CBusPtr i2c
 }
 
 /*
- * Reset the cached output status for all outputs.  Called from G80BlockHandler.
+ * Reset the cached output status for all outputs.  Called from NV50BlockHandler.
  */
 void
-G80OutputResetCachedStatus(ScrnInfoPtr pScrn)
+NV50OutputResetCachedStatus(ScrnInfoPtr pScrn)
 {
     xf86CrtcConfigPtr xf86_config = XF86_CRTC_CONFIG_PTR(pScrn);
     int i;
 
     for(i = 0; i < xf86_config->num_output; i++) {
-        G80OutputPrivPtr pPriv = xf86_config->output[i]->driver_private;
+        NV50OutputPrivPtr pPriv = xf86_config->output[i]->driver_private;
         pPriv->cached_status = XF86OutputStatusUnknown;
     }
 }
 
 DisplayModePtr
-G80OutputGetDDCModes(xf86OutputPtr output)
+NV50OutputGetDDCModes(xf86OutputPtr output)
 {
     /* The EDID is read as part of the detect step */
     output->funcs->detect(output);
@@ -300,25 +300,25 @@ G80OutputGetDDCModes(xf86OutputPtr output)
 }
 
 void
-G80OutputDestroy(xf86OutputPtr output)
+NV50OutputDestroy(xf86OutputPtr output)
 {
-    G80OutputPrivPtr pPriv = output->driver_private;
+    NV50OutputPrivPtr pPriv = output->driver_private;
 
     if(pPriv->partner)
-        ((G80OutputPrivPtr)pPriv->partner->driver_private)->partner = NULL;
+        ((NV50OutputPrivPtr)pPriv->partner->driver_private)->partner = NULL;
     else
         xf86DestroyI2CBusRec(pPriv->i2c, TRUE, TRUE);
     pPriv->i2c = NULL;
 }
 
 Bool
-G80CreateOutputs(ScrnInfoPtr pScrn)
+NV50CreateOutputs(ScrnInfoPtr pScrn)
 {
     NVPtr pNv = NVPTR(pScrn);
     xf86CrtcConfigPtr xf86_config = XF86_CRTC_CONFIG_PTR(pScrn);
     int i;
 
-    if(!G80ReadPortMapping(pScrn->scrnIndex, pNv))
+    if(!NV50ReadPortMapping(pScrn->scrnIndex, pNv))
         return FALSE;
 
     /* For each DDC port, create an output for the attached ORs */
@@ -332,7 +332,7 @@ G80CreateOutputs(ScrnInfoPtr pScrn)
             continue;
 
         snprintf(i2cName, sizeof(i2cName), "I2C%i", i);
-        i2c = G80I2CInit(pScrn, i2cName, i);
+        i2c = NV50I2CInit(pScrn, i2cName, i);
         if(!i2c) {
             xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
                        "Failed to initialize I2C for port %i.\n",
@@ -341,18 +341,18 @@ G80CreateOutputs(ScrnInfoPtr pScrn)
         }
 
         if(pNv->i2cMap[i].dac != -1)
-            dac = G80CreateDac(pScrn, pNv->i2cMap[i].dac);
+            dac = NV50CreateDac(pScrn, pNv->i2cMap[i].dac);
         if(pNv->i2cMap[i].sor != -1)
-            sor = G80CreateSor(pScrn, pNv->i2cMap[i].sor);
+            sor = NV50CreateSor(pScrn, pNv->i2cMap[i].sor);
 
         if(dac) {
-            G80OutputPrivPtr pPriv = dac->driver_private;
+            NV50OutputPrivPtr pPriv = dac->driver_private;
 
             pPriv->partner = sor;
             pPriv->i2c = i2c;
         }
         if(sor) {
-            G80OutputPrivPtr pPriv = sor->driver_private;
+            NV50OutputPrivPtr pPriv = sor->driver_private;
 
             pPriv->partner = dac;
             pPriv->i2c = i2c;

@@ -1,7 +1,12 @@
-Bool G80CursorInit(ScreenPtr);
-Bool G80CursorAcquire(ScrnInfoPtr);
-void G80CursorRelease(ScrnInfoPtr);
+#ifndef __NV50_CURSOR_H__
+#define __NV50_CURSOR_H__
+
+Bool NV50CursorInit(ScreenPtr);
+Bool NV50CursorAcquire(ScrnInfoPtr);
+void NV50CursorRelease(ScrnInfoPtr);
 
 /* CRTC cursor functions */
-void G80SetCursorPosition(xf86CrtcPtr crtc, int x, int y);
-void G80LoadCursorARGB(xf86CrtcPtr crtc, CARD32 *src);
+void NV50SetCursorPosition(xf86CrtcPtr crtc, int x, int y);
+void NV50LoadCursorARGB(xf86CrtcPtr crtc, CARD32 *src);
+
+#endif

@@ -35,20 +35,20 @@
 #include "nv50_output.h"
 
 static void
-G80DacSetPClk(xf86OutputPtr output, int pclk)
+NV50DacSetPClk(xf86OutputPtr output, int pclk)
 {
     NVPtr pNv = NVPTR(output->scrn);
-    G80OutputPrivPtr pPriv = output->driver_private;
+    NV50OutputPrivPtr pPriv = output->driver_private;
     const int orOff = 0x800 * pPriv->or;
 
     pNv->REGS[(0x00614280+orOff)/4] = 0;
 }
 
 static void
-G80DacDPMSSet(xf86OutputPtr output, int mode)
+NV50DacDPMSSet(xf86OutputPtr output, int mode)
 {
     NVPtr pNv = NVPTR(output->scrn);
-    G80OutputPrivPtr pPriv = output->driver_private;
+    NV50OutputPrivPtr pPriv = output->driver_private;
     const int off = 0x800 * pPriv->or;
     CARD32 tmp;
 
@@ -77,11 +77,11 @@ G80DacDPMSSet(xf86OutputPtr output, int mode)
 }
 
 static void
-G80DacModeSet(xf86OutputPtr output, DisplayModePtr mode,
+NV50DacModeSet(xf86OutputPtr output, DisplayModePtr mode,
               DisplayModePtr adjusted_mode)
 {
     ScrnInfoPtr pScrn = output->scrn;
-    G80OutputPrivPtr pPriv = output->driver_private;
+    NV50OutputPrivPtr pPriv = output->driver_private;
     const int dacOff = 0x80 * pPriv->or;
 
     if(!adjusted_mode) {
@@ -90,12 +90,12 @@ G80DacModeSet(xf86OutputPtr output, DisplayModePtr mode,
     }
 
     // This wouldn't be necessary, but the server is stupid and calls
-    // G80DacDPMSSet after the output is disconnected, even though the hardware
+    // NV50DacDPMSSet after the output is disconnected, even though the hardware
     // turns it off automatically.
-    G80DacDPMSSet(output, DPMSModeOn);
+    NV50DacDPMSSet(output, DPMSModeOn);
 
     C(0x00000400 + dacOff,
-        (G80CrtcGetHead(output->crtc) == HEAD0 ? 1 : 2) | 0x40);
+        (NV50CrtcGetHead(output->crtc) == HEAD0 ? 1 : 2) | 0x40);
     C(0x00000404 + dacOff,
         (adjusted_mode->Flags & V_NHSYNC) ? 1 : 0 |
         (adjusted_mode->Flags & V_NVSYNC) ? 2 : 0);
@@ -105,24 +105,24 @@ G80DacModeSet(xf86OutputPtr output, DisplayModePtr mode,
  * Perform DAC load detection to determine if there is a connected display.
  */
 static xf86OutputStatus
-G80DacDetect(xf86OutputPtr output)
+NV50DacDetect(xf86OutputPtr output)
 {
-    G80OutputPrivPtr pPriv = output->driver_private;
+    NV50OutputPrivPtr pPriv = output->driver_private;
 
     /* Assume physical status isn't going to change before the BlockHandler */
     if(pPriv->cached_status != XF86OutputStatusUnknown)
         return pPriv->cached_status;
 
-    G80OutputPartnersDetect(output, pPriv->partner, pPriv->i2c);
+    NV50OutputPartnersDetect(output, pPriv->partner, pPriv->i2c);
     return pPriv->cached_status;
 }
 
 Bool
-G80DacLoadDetect(xf86OutputPtr output)
+NV50DacLoadDetect(xf86OutputPtr output)
 {
     ScrnInfoPtr pScrn = output->scrn;
     NVPtr pNv = NVPTR(pScrn);
-    G80OutputPrivPtr pPriv = output->driver_private;
+    NV50OutputPrivPtr pPriv = output->driver_private;
     const int scrnIndex = pScrn->scrnIndex;
     const int dacOff = 2048 * pPriv->or;
     CARD32 load, tmp, tmp2;
@@ -152,32 +152,32 @@ G80DacLoadDetect(xf86OutputPtr output)
 }
 
 static void
-G80DacDestroy(xf86OutputPtr output)
+NV50DacDestroy(xf86OutputPtr output)
 {
-    G80OutputDestroy(output);
+    NV50OutputDestroy(output);
 
     xfree(output->driver_private);
     output->driver_private = NULL;
 }
 
-static const xf86OutputFuncsRec G80DacOutputFuncs = {
-    .dpms = G80DacDPMSSet,
+static const xf86OutputFuncsRec NV50DacOutputFuncs = {
+    .dpms = NV50DacDPMSSet,
     .save = NULL,
     .restore = NULL,
-    .mode_valid = G80OutputModeValid,
-    .mode_fixup = G80OutputModeFixup,
-    .prepare = G80OutputPrepare,
-    .commit = G80OutputCommit,
-    .mode_set = G80DacModeSet,
-    .detect = G80DacDetect,
-    .get_modes = G80OutputGetDDCModes,
-    .destroy = G80DacDestroy,
+    .mode_valid = NV50OutputModeValid,
+    .mode_fixup = NV50OutputModeFixup,
+    .prepare = NV50OutputPrepare,
+    .commit = NV50OutputCommit,
+    .mode_set = NV50DacModeSet,
+    .detect = NV50DacDetect,
+    .get_modes = NV50OutputGetDDCModes,
+    .destroy = NV50DacDestroy,
 };
 
 xf86OutputPtr
-G80CreateDac(ScrnInfoPtr pScrn, ORNum or)
+NV50CreateDac(ScrnInfoPtr pScrn, ORNum or)
 {
-    G80OutputPrivPtr pPriv = xnfcalloc(sizeof(*pPriv), 1);
+    NV50OutputPrivPtr pPriv = xnfcalloc(sizeof(*pPriv), 1);
     xf86OutputPtr output;
     char orName[5];
 
@@ -185,12 +185,12 @@ G80CreateDac(ScrnInfoPtr pScrn, ORNum or)
         return FALSE;
 
     snprintf(orName, 5, "VGA%i", or);
-    output = xf86OutputCreate(pScrn, &G80DacOutputFuncs, orName);
+    output = xf86OutputCreate(pScrn, &NV50DacOutputFuncs, orName);
 
     pPriv->type = DAC;
     pPriv->or = or;
     pPriv->cached_status = XF86OutputStatusUnknown;
-    pPriv->set_pclk = G80DacSetPClk;
+    pPriv->set_pclk = NV50DacSetPClk;
     output->driver_private = pPriv;
     output->interlaceAllowed = TRUE;
     output->doubleScanAllowed = TRUE;
