@@ -44,7 +44,7 @@ NV50GetVBIOSImage(NVPtr pNv)
 		old_bar0_pramin = pNv->REGS[0x1700/4];
 		pNv->REGS[0x1700/4] = pNv->REGS[0x00619f04/4] >> 8;
 
-		memcpy(VBIOS, (const void *)pNv->PRAMIN, 65536);
+		memcpy(VBIOS, (const void *)&pNv->REGS[0x700000/4], 65536);
 
 		pNv->REGS[0x1700/4] = old_bar0_pramin;
 	}
