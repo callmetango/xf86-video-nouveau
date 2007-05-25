@@ -916,6 +916,8 @@ NVEnterVT(int scrnIndex, int flags)
 	NVPtr pNv = NVPTR(pScrn);
 	int i;
 
+	pScrn->vtSema = TRUE;
+
 	if (pNv->Architecture == NV_ARCH_50) {
 		if (!NV50AcquireDisplay(pScrn))
 			return FALSE;
@@ -927,8 +929,6 @@ NVEnterVT(int scrnIndex, int flags)
 		pNv->SaveGeneration = serverGeneration;
 		NVSave(pScrn);
 	}
-
-	pScrn->vtSema = TRUE;
 
 	NVResetCrtcConfig(pScrn, 0);
 	if (!xf86SetDesiredModes(pScrn))
@@ -2007,6 +2007,7 @@ NV50LoadPalette(ScrnInfoPtr pScrn, int numColors, int *indices,
 		unsigned short red, green, blue, unused;
 	} *lut = (void *) pNv->CLUT->map;
 
+	ErrorF("NV50LoadPalette\n");
 	switch (pScrn->depth) {
 	case 15:
 		for (i = 0; i < numColors; i++) {
