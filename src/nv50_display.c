@@ -399,7 +399,7 @@ NV50CrtcBlankScreen(xf86CrtcPtr crtc, Bool blank)
         if(pNv->_Chipset != 0x50)
             C(0x0000089C + headOff, 0);
     } else {
-        C(0x00000860 + headOff, 0);
+        C(0x00000860 + headOff, pNv->FB->offset >> 8);
         C(0x00000864 + headOff, 0);
         pNv->REGS[0x00610380/4] = 0;
 	/*XXX: in "nv" this is total vram size.  our RamAmountKBytes is clamped

@@ -1005,7 +1005,6 @@ NVCloseScreen(int scrnIndex, ScreenPtr pScreen)
 	NVPtr pNv = NVPTR(pScrn);
 
 	if (pScrn->vtSema) {
-		ErrorF("*************\n");
 		if (pNv->Architecture == NV_ARCH_50) {
 			NV50ReleaseDisplay(pScrn);
 		} else {
@@ -1441,10 +1440,6 @@ NVPreInit(ScrnInfoPtr pScrn, int flags)
 		pNv->NoAccel = TRUE;
 		xf86DrvMsg(pScrn->scrnIndex, X_CONFIG,
 			   "Acceleration disabled\n");
-	} else if (pNv->Architecture == NV_ARCH_50) {
-		pNv->NoAccel = TRUE;
-		xf86DrvMsg(pScrn->scrnIndex, X_WARNING,
-			   "NV50 detected, acceleration not currently supported\n");
 	}
 
 	if (xf86ReturnOptValBool(pNv->Options, OPTION_SHADOW_FB, FALSE)) {
@@ -2015,7 +2010,6 @@ NV50LoadPalette(ScrnInfoPtr pScrn, int numColors, int *indices,
 		unsigned short red, green, blue, unused;
 	} *lut = (void *) pNv->CLUT->map;
 
-	ErrorF("NV50LoadPalette\n");
 	switch (pScrn->depth) {
 	case 15:
 		for (i = 0; i < numColors; i++) {
