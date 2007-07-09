@@ -60,6 +60,7 @@ nouveau_drv_la_SOURCES = \
 	 nv50_cursor.c \
 	 nv50_dac.c \
 	 nv50_display.c \
+	 nv50_exa.c \
 	 nv50_output.c \
 	 nv50_sor.c
 
