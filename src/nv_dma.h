@@ -4,7 +4,6 @@
 #define NVDEBUG if (NV_DMA_DEBUG) ErrorF
 
 enum DMAObjects {
-	NvNullObject		= 0x00000000,
 	NvContextSurfaces	= 0x80000010, 
 	NvRop			= 0x80000011, 
 	NvImagePattern		= 0x80000012, 

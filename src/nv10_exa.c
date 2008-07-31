@@ -903,15 +903,15 @@ NVAccelInitNV10TCL(ScrnInfoPtr pScrn)
 	celcius = pNv->Nv3D;
 
 	BEGIN_RING(chan, celcius, NV10TCL_DMA_NOTIFY, 1);
-	OUT_RING  (chan, pNv->NvNull->handle);
+	OUT_RING  (chan, chan->nullobj->handle);
 
 	BEGIN_RING(chan, celcius, NV10TCL_DMA_IN_MEMORY0, 2);
-	OUT_RING  (chan, pNv->chan->vram->handle);
-	OUT_RING  (chan, pNv->chan->gart->handle);
+	OUT_RING  (chan, chan->vram->handle);
+	OUT_RING  (chan, chan->gart->handle);
 
 	BEGIN_RING(chan, celcius, NV10TCL_DMA_IN_MEMORY2, 2);
-	OUT_RING  (chan, pNv->chan->vram->handle);
-	OUT_RING  (chan, pNv->chan->vram->handle);
+	OUT_RING  (chan, chan->vram->handle);
+	OUT_RING  (chan, chan->vram->handle);
 
 	BEGIN_RING(chan, celcius, NV10TCL_NOP, 1);
 	OUT_RING  (chan, 0);

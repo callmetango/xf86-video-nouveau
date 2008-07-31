@@ -585,11 +585,11 @@ NVAccelInitNV40TCL(ScrnInfoPtr pScrn)
 	BEGIN_RING(chan, curie, NV40TCL_DMA_NOTIFY, 1);
 	OUT_RING  (chan, pNv->notify0->handle);
 	BEGIN_RING(chan, curie, NV40TCL_DMA_TEXTURE0, 2);
-	OUT_RING  (chan, pNv->chan->vram->handle);
-	OUT_RING  (chan, pNv->chan->gart->handle);
+	OUT_RING  (chan, chan->vram->handle);
+	OUT_RING  (chan, chan->gart->handle);
 	BEGIN_RING(chan, curie, NV40TCL_DMA_COLOR0, 2);
-	OUT_RING  (chan, pNv->chan->vram->handle);
-	OUT_RING  (chan, pNv->chan->vram->handle);
+	OUT_RING  (chan, chan->vram->handle);
+	OUT_RING  (chan, chan->vram->handle);
 
 	/* voodoo */
 	BEGIN_RING(chan, curie, 0x1ea4, 3);

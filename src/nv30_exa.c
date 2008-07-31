@@ -638,16 +638,16 @@ NVAccelInitNV30TCL(ScrnInfoPtr pScrn)
 	rankine = pNv->Nv3D;
 
 	BEGIN_RING(chan, rankine, NV34TCL_DMA_TEXTURE0, 3);
-	OUT_RING  (chan, pNv->chan->vram->handle);
-	OUT_RING  (chan, pNv->chan->gart->handle);
-	OUT_RING  (chan, pNv->chan->vram->handle);
+	OUT_RING  (chan, chan->vram->handle);
+	OUT_RING  (chan, chan->gart->handle);
+	OUT_RING  (chan, chan->vram->handle);
 	BEGIN_RING(chan, rankine, NV34TCL_DMA_IN_MEMORY7, 1);
-	OUT_RING  (chan, pNv->chan->vram->handle);
+	OUT_RING  (chan, chan->vram->handle);
 	BEGIN_RING(chan, rankine, NV34TCL_DMA_COLOR0, 2);
-	OUT_RING  (chan, pNv->chan->vram->handle);
-	OUT_RING  (chan, pNv->chan->vram->handle);
+	OUT_RING  (chan, chan->vram->handle);
+	OUT_RING  (chan, chan->vram->handle);
 	BEGIN_RING(chan, rankine, NV34TCL_DMA_IN_MEMORY8, 1);
-	OUT_RING  (chan, pNv->chan->vram->handle);
+	OUT_RING  (chan, chan->vram->handle);
 
 	for (i=1; i<8; i++) {
 		BEGIN_RING(chan, rankine, NV34TCL_VIEWPORT_CLIP_HORIZ(i), 2);

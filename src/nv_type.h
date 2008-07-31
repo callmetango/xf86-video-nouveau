@@ -503,7 +503,6 @@ typedef struct _NVRec {
 	/* GPU context */
 	struct nouveau_channel *chan;
 	struct nouveau_notifier *notify0;
-	struct nouveau_grobj *NvNull;
 	struct nouveau_grobj *NvContextSurfaces;
 	struct nouveau_grobj *NvContextBeta1;
 	struct nouveau_grobj *NvContextBeta4;
