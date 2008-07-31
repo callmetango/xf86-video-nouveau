@@ -48,6 +48,7 @@ struct nouveau_bo {
 
 	uint32_t flags;
 	uint64_t offset;
+	int tiled;
 };
 
 #endif

@@ -373,7 +373,7 @@ NVAccelDownloadM2MF(PixmapPtr pspix, int x, int y, int w, int h,
 		    NOUVEAU_BO_GART | NOUVEAU_BO_VRAM | NOUVEAU_BO_RD);
 	OUT_RELOCo(chan, pNv->GART, NOUVEAU_BO_GART | NOUVEAU_BO_WR);
 
-	if (!(nvpix->bo->flags & NOUVEAU_BO_TILED)) {
+	if (!nvpix->bo->tiled) {
 		linear     = 1;
 		src_pitch  = exaGetPixmapPitch(pspix);
 		src_offset = (y * src_pitch) + (x * cpp);
@@ -619,7 +619,7 @@ NVAccelUploadM2MF(PixmapPtr pdpix, int x, int y, int w, int h,
 	OUT_PIXMAPo(chan, pdpix,
 		    NOUVEAU_BO_VRAM | NOUVEAU_BO_GART | NOUVEAU_BO_WR);
 
-	if (!(nvpix->bo->flags & NOUVEAU_BO_TILED)) {
+	if (!nvpix->bo->tiled) {
 		linear     = 1;
 		dst_pitch  = exaGetPixmapPitch(pdpix);
 		dst_offset = (y * dst_pitch) + (x * cpp);

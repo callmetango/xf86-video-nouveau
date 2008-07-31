@@ -84,7 +84,7 @@ nouveau_bo_tmp_del(void *priv)
 {
 	struct nouveau_resource *r = priv;
 
-	nouveau_fence_ref(NULL, (struct nouveau_fence **)&r->priv);
+	nouveau_fence_ref(NULL, (void *)&r->priv);
 	nouveau_resource_free(&r);
 }
 
@@ -183,9 +183,9 @@ nouveau_bo_new(struct nouveau_device *dev, uint32_t flags, int align,
 	nvbo->refcount = 1;
 
 	if (flags & NOUVEAU_BO_TILED) {
-		nvbo->tiled = 1;
+		nvbo->base.tiled = 1;
 		if (flags & NOUVEAU_BO_ZTILE)
-			nvbo->tiled |= 2;
+			nvbo->base.tiled |= 2;
 		flags &= ~NOUVEAU_BO_TILED;
 	}
 
@@ -351,9 +351,9 @@ nouveau_bo_set_status(struct nouveau_bo *bo, uint32_t flags)
 	if (flags & NOUVEAU_BO_GART)
 		new_flags |= (NOUVEAU_MEM_AGP | NOUVEAU_MEM_PCI);
 	
-	if (nvbo->tiled && flags) {
+	if (nvbo->base.tiled && flags) {
 		new_flags |= NOUVEAU_MEM_TILE;
-		if (nvbo->tiled & 2)
+		if (nvbo->base.tiled & 2)
 			new_flags |= NOUVEAU_MEM_TILE_ZETA;
 	}
 

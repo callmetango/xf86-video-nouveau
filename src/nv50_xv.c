@@ -54,7 +54,7 @@ nv50_xv_check_image_put(PixmapPtr ppix)
 		return FALSE;
 	}
 
-	if (!(nvpix->bo->flags & NOUVEAU_BO_TILED))
+	if (!nvpix->bo->tiled)
 		return FALSE;
 
 	return TRUE;
