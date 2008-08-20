@@ -205,22 +205,28 @@ nouveau_notifier_wait_status(struct nouveau_notifier *, int id, int status,
 
 struct nouveau_bo_priv {
 	struct nouveau_bo base;
-
-	unsigned size;
-	unsigned align;
 	int refcount;
 
+	/* Buffer configuration + usage hints */
+	unsigned flags;
+	unsigned size;
+	unsigned align;
+	int user;
+
+	/* Tracking */
 	struct drm_nouveau_gem_pushbuf_bo *pending;
 	struct nouveau_channel *pending_channel;
 	struct nouveau_fence *fence;
 	struct nouveau_fence *wr_fence;
 
+	/* Userspace object */
 	void *sysmem;
-	int user;
 
+	/* Kernel object */
 	unsigned handle;
 	void *map;
 
+	/* Last known information from kernel on buffer status */
 	int pinned;
 	uint64_t offset;
 	uint32_t domain;
@@ -243,9 +249,6 @@ nouveau_bo_user(struct nouveau_device *, void *ptr, int size,
 
 NOUVEAU_PRIVATE int
 nouveau_bo_ref(struct nouveau_device *, uint64_t handle, struct nouveau_bo **);
-
-NOUVEAU_PRIVATE int
-nouveau_bo_set_status(struct nouveau_bo *, uint32_t flags);
 
 NOUVEAU_PRIVATE void
 nouveau_bo_del(struct nouveau_bo **);
@@ -275,5 +278,8 @@ nouveau_resource_alloc(struct nouveau_resource *heap, int size, void *priv,
 
 NOUVEAU_PRIVATE void
 nouveau_resource_free(struct nouveau_resource **);
+
+NOUVEAU_PRIVATE struct drm_nouveau_gem_pushbuf_bo *
+nouveau_bo_emit_buffer(struct nouveau_channel *, struct nouveau_bo *);
 
 #endif

@@ -123,33 +123,6 @@ nouveau_pushbuf_flush(struct nouveau_channel *chan, unsigned min)
 	return 0;
 }
 
-static struct drm_nouveau_gem_pushbuf_bo *
-nouveau_pushbuf_emit_buffer(struct nouveau_channel *chan, struct nouveau_bo *bo)
-{
-	struct nouveau_pushbuf_priv *nvpb = nouveau_pushbuf(chan->pushbuf);
-	struct nouveau_bo_priv *nvbo = nouveau_bo(bo);
-	struct drm_nouveau_gem_pushbuf_bo *pbbo;
-	struct nouveau_bo *ref = NULL;
-
-	if (nvbo->pending)
-		return nvbo->pending;
-
-	if (nvpb->nr_buffers >= NOUVEAU_PUSHBUF_MAX_BUFFERS)
-		return NULL;
-	pbbo = nvpb->buffers + nvpb->nr_buffers++;
-	nvbo->pending = pbbo;
-	nvbo->pending_channel = chan;
-
-	nouveau_bo_ref(bo->device, bo->handle, &ref);
-	pbbo->user_priv = (uint64_t)(unsigned long)ref;
-	pbbo->handle = nvbo->handle;
-	pbbo->domains = NOUVEAU_GEM_DOMAIN_VRAM | NOUVEAU_GEM_DOMAIN_GART;
-	pbbo->presumed_domain = nvbo->domain;
-	pbbo->presumed_offset = nvbo->offset;
-	pbbo->presumed_ok = 1;
-	return pbbo;
-}
-
 int
 nouveau_pushbuf_emit_reloc(struct nouveau_channel *chan, void *ptr,
 			   struct nouveau_bo *bo, uint32_t data, uint32_t flags,
@@ -163,7 +136,12 @@ nouveau_pushbuf_emit_reloc(struct nouveau_channel *chan, void *ptr,
 	if (nvpb->nr_relocs >= NOUVEAU_PUSHBUF_MAX_RELOCS)
 		return -ENOMEM;
 
-	pbbo = nouveau_pushbuf_emit_buffer(chan, bo);
+	if (nouveau_bo(bo)->user && (flags & NOUVEAU_BO_WR)) {
+		NOUVEAU_ERR("write to user buffer!!\n");
+		return -EINVAL;
+	}
+
+	pbbo = nouveau_bo_emit_buffer(chan, bo);
 	if (!pbbo)
 		return -ENOMEM;
 
@@ -173,6 +151,7 @@ nouveau_pushbuf_emit_reloc(struct nouveau_channel *chan, void *ptr,
 		pbbo->domains &= ~NOUVEAU_GEM_DOMAIN_VRAM;
 	if (!(flags & NOUVEAU_BO_GART))
 		pbbo->domains &= ~NOUVEAU_GEM_DOMAIN_GART;
+	assert(pbbo->domains);
 
 	r = nvpb->relocs + nvpb->nr_relocs++;
 	r->bo_index = pbbo - nvpb->buffers;

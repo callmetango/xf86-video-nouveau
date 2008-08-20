@@ -48,6 +48,7 @@ struct nouveau_bo {
 
 	int tiled;
 
+	/* Available when buffer is pinned *only* */
 	uint32_t flags;
 	uint64_t offset;
 };
