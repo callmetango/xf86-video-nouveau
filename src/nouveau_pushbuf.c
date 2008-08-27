@@ -131,6 +131,7 @@ nouveau_pushbuf_emit_reloc(struct nouveau_channel *chan, void *ptr,
 	struct nouveau_pushbuf_priv *nvpb = nouveau_pushbuf(chan->pushbuf);
 	struct drm_nouveau_gem_pushbuf_reloc *r;
 	struct drm_nouveau_gem_pushbuf_bo *pbbo;
+	uint32_t domains = 0;
 	unsigned push = 0;
 
 	if (nvpb->nr_relocs >= NOUVEAU_PUSHBUF_MAX_RELOCS)
@@ -145,13 +146,17 @@ nouveau_pushbuf_emit_reloc(struct nouveau_channel *chan, void *ptr,
 	if (!pbbo)
 		return -ENOMEM;
 
-	if (flags & NOUVEAU_BO_RD) pbbo->access |= NOUVEAU_GEM_ACCESS_RD;
-	if (flags & NOUVEAU_BO_WR) pbbo->access |= NOUVEAU_GEM_ACCESS_WR;
-	if (!(flags & NOUVEAU_BO_VRAM))
-		pbbo->domains &= ~NOUVEAU_GEM_DOMAIN_VRAM;
-	if (!(flags & NOUVEAU_BO_GART))
-		pbbo->domains &= ~NOUVEAU_GEM_DOMAIN_GART;
-	assert(pbbo->domains);
+	if (flags & NOUVEAU_BO_VRAM)
+		domains |= NOUVEAU_GEM_DOMAIN_VRAM;
+	if (flags & NOUVEAU_BO_GART)
+		domains |= NOUVEAU_GEM_DOMAIN_GART;
+	pbbo->valid_domains &= domains;
+	assert(pbbo->valid_domains);
+
+	if (flags & NOUVEAU_BO_RD) 
+		pbbo->read_domains |= domains;
+	if (flags & NOUVEAU_BO_WR)
+		pbbo->write_domains |= domains;
 
 	r = nvpb->relocs + nvpb->nr_relocs++;
 	r->bo_index = pbbo - nvpb->buffers;

@@ -290,8 +290,7 @@ nouveau_bo_map(struct nouveau_bo *bo, uint32_t flags)
 		bo->map = nvbo->sysmem;
 	} else {
 		if (nvbo->pending &&
-		    (nvbo->pending->access & NOUVEAU_GEM_ACCESS_WR ||
-		     flags & NOUVEAU_BO_WR)) {
+		    (nvbo->pending->write_domains || flags & NOUVEAU_BO_WR)) {
 			nouveau_pushbuf_flush(nvbo->pending_channel, 0);
 		}
 
@@ -423,7 +422,9 @@ nouveau_bo_emit_buffer(struct nouveau_channel *chan, struct nouveau_bo *bo)
 	nouveau_bo_ref(bo->device, bo->handle, &ref);
 	pbbo->user_priv = (uint64_t)(unsigned long)ref;
 	pbbo->handle = nvbo->handle;
-	pbbo->domains = NOUVEAU_GEM_DOMAIN_VRAM | NOUVEAU_GEM_DOMAIN_GART;
+	pbbo->valid_domains = NOUVEAU_GEM_DOMAIN_VRAM | NOUVEAU_GEM_DOMAIN_GART;
+	pbbo->read_domains =
+	pbbo->write_domains = 0;
 	pbbo->presumed_domain = nvbo->domain;
 	pbbo->presumed_offset = nvbo->offset;
 	pbbo->presumed_ok = 1;
