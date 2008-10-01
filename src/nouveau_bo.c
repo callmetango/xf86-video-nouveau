@@ -134,19 +134,6 @@ nouveau_bo_kalloc(struct nouveau_bo_priv *nvbo)
 	nvbo->size = req.size;
 	nvbo->domain = req.domain;
 
-	if (nvbo->flags & NOUVEAU_BO_SHARED) {
-		struct drm_gem_flink f_req;
-
-		f_req.handle = req.handle;
-		ret = ioctl(nvdev->fd, DRM_IOCTL_GEM_FLINK, &f_req);
-		if (ret) {
-			nouveau_bo_kfree(nvbo);
-			return ret;
-		}
-
-		nvbo->global_handle = f_req.name;
-	}
-
 	return 0;
 }
 
@@ -231,32 +218,6 @@ nouveau_bo_user(struct nouveau_device *dev, void *ptr, int size,
 	return 0;
 }
 
-int
-nouveau_bo_ref_handle(struct nouveau_device *dev, uint32_t handle,
-		      struct nouveau_bo **bo)
-{
-	struct nouveau_device_priv *nvdev = nouveau_device(dev);
-	struct nouveau_bo_priv *nvbo;
-	struct drm_gem_open req;
-	int ret;
-
-	ret = nouveau_bo_new(dev, 0, 0, 0, bo);
-	if (ret)
-		return ret;
-	nvbo = nouveau_bo(*bo);
-
-	req.name = handle;
-	ret = ioctl(nvdev->fd, DRM_IOCTL_GEM_OPEN, &req);
-	if (ret) {
-		nouveau_bo_ref(NULL, bo);
-		return ret;
-	}
-
-	nvbo->size = req.size;
-	nvbo->handle = req.handle;
-	return 0;
-}
-
 static void
 nouveau_bo_del_cb(void *priv)
 {
@@ -267,6 +228,63 @@ nouveau_bo_del_cb(void *priv)
 	nouveau_bo_kfree(nvbo);
 	free(nvbo);
 }
+
+int
+nouveau_bo_handle_get(struct nouveau_bo *bo, uint32_t *handle)
+{
+	struct nouveau_bo_priv *nvbo = nouveau_bo(bo);
+	int ret;
+ 
+	if (!bo || !handle)
+		return -EINVAL;
+ 
+	if (!nvbo->global_handle) {
+		struct nouveau_device_priv *nvdev = nouveau_device(bo->device);
+		struct drm_gem_flink req;
+ 
+		ret = nouveau_bo_kalloc(nvbo);
+		if (ret)
+			return ret;
+ 
+		req.handle = nvbo->handle;
+		ret = ioctl(nvdev->fd, DRM_IOCTL_GEM_FLINK, &req);
+		if (ret) {
+			nouveau_bo_kfree(nvbo);
+			return ret;
+		}
+ 
+		nvbo->global_handle = req.name;
+	}
+ 
+	*handle = nvbo->global_handle;
+	return 0;
+}
+ 
+int
+nouveau_bo_handle_ref(struct nouveau_device *dev, uint32_t handle,
+		      struct nouveau_bo **bo)
+{
+	struct nouveau_device_priv *nvdev = nouveau_device(dev);
+	struct nouveau_bo_priv *nvbo;
+	struct drm_gem_open req;
+	int ret;
+ 
+	ret = nouveau_bo_new(dev, 0, 0, 0, bo);
+	if (ret)
+		return ret;
+	nvbo = nouveau_bo(*bo);
+ 
+	req.name = handle;
+	ret = ioctl(nvdev->fd, DRM_IOCTL_GEM_OPEN, &req);
+	if (ret) {
+		nouveau_bo_ref(NULL, bo);
+		return ret;
+	}
+ 
+	nvbo->size = req.size;
+	nvbo->handle = req.handle;
+	return 0;
+} 
 
 static void
 nouveau_bo_del(struct nouveau_bo **bo)

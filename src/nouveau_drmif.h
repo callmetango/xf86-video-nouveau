@@ -249,7 +249,10 @@ nouveau_bo_user(struct nouveau_device *, void *ptr, int size,
 		struct nouveau_bo **);
 
 NOUVEAU_PRIVATE int
-nouveau_bo_ref_handle(struct nouveau_device *, uint32_t handle,
+nouveau_bo_handle_get(struct nouveau_bo *, uint32_t *);
+
+NOUVEAU_PRIVATE int
+nouveau_bo_handle_ref(struct nouveau_device *, uint32_t handle,
 		      struct nouveau_bo **);
 
 NOUVEAU_PRIVATE int

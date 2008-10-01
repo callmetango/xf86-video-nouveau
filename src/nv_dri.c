@@ -403,7 +403,8 @@ Bool NVDRIFinishScreenInit(ScrnInfoPtr pScrn)
 	pNOUVEAUDRI->depth		= pScrn->depth;
 	pNOUVEAUDRI->bpp		= pScrn->bitsPerPixel;
 
-	pNOUVEAUDRI->front_handle	= nouveau_bo(pNv->FB)->global_handle;
+	if (nouveau_bo_handle_get(pNv->FB, &pNOUVEAUDRI->front_handle))
+		return FALSE;
 	pNOUVEAUDRI->front_pitch	= pScrn->displayWidth;
 
 	return TRUE;

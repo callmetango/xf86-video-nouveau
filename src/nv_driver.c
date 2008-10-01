@@ -1980,8 +1980,7 @@ NVScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 			return FALSE;
 	}
 
-	if (nouveau_bo_new(pNv->dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_PIN |
-			   NOUVEAU_BO_SHARED, 0,
+	if (nouveau_bo_new(pNv->dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_PIN, 0,
 			   NOUVEAU_ALIGN(pScrn->virtualX, 64) *
 			   NOUVEAU_ALIGN(pScrn->virtualY, 64) *
 			   (pScrn->bitsPerPixel >> 3), &pNv->FB)) {
