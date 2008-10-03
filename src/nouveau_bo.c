@@ -336,6 +336,9 @@ nouveau_bo_map(struct nouveau_bo *bo, uint32_t flags)
 	if (nvbo->sysmem) {
 		bo->map = nvbo->sysmem;
 	} else {
+		struct nouveau_device_priv *nvdev = nouveau_device(bo->device);
+		struct drm_nouveau_gem_cpu_prep req;
+
 		if (nvbo->pending &&
 		    (nvbo->pending->write_domains || flags & NOUVEAU_BO_WR)) {
 			nouveau_pushbuf_flush(nvbo->pending_channel, 0);
@@ -343,10 +346,11 @@ nouveau_bo_map(struct nouveau_bo *bo, uint32_t flags)
 
 		nouveau_bo_kmap(nvbo);
 
-		if (flags & NOUVEAU_BO_WR)
-			nouveau_fence_wait(&nvbo->fence);
-		else
-			nouveau_fence_wait(&nvbo->wr_fence);
+		req.handle = nvbo->handle;
+		ret = drmCommandWrite(nvdev->fd, DRM_NOUVEAU_GEM_CPU_PREP,
+				      &req, sizeof(req));
+		if (ret)
+			return ret;
 
 		bo->map = nvbo->map;
 	}
@@ -357,6 +361,17 @@ nouveau_bo_map(struct nouveau_bo *bo, uint32_t flags)
 void
 nouveau_bo_unmap(struct nouveau_bo *bo)
 {
+	struct nouveau_bo_priv *nvbo = nouveau_bo(bo);
+
+	if (bo->map && !nvbo->sysmem) {
+		struct nouveau_device_priv *nvdev = nouveau_device(bo->device);
+		struct drm_nouveau_gem_cpu_fini req;
+
+		req.handle = nvbo->handle;
+		drmCommandWrite(nvdev->fd, DRM_NOUVEAU_GEM_CPU_FINI,
+				&req, sizeof(req));
+	}
+
 	bo->map = NULL;
 }
 
