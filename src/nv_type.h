@@ -20,7 +20,9 @@
 
 #include "nv_pcicompat.h"
 
-#include "nouveau_local.h"
+#include "nouveau_pushbuf.h"
+#include "nouveau_grobj.h"
+#include "nouveau_notifier.h"
 
 #include "nouveau_crtc.h"
 #include "nouveau_connector.h"
@@ -604,5 +606,18 @@ typedef struct _NVPortPrivRec {
 #define FREE_DELAY      5000
 
 #define TIMER_MASK      (OFF_TIMER | FREE_TIMER)
+
+#if 0
+#define NOUVEAU_FALLBACK(fmt,args...) do {    \
+	NOUVEAU_ERR("FALLBACK: "fmt, ##args); \
+	return FALSE;                         \
+} while(0)
+#else
+#define NOUVEAU_FALLBACK(fmt,args...) do {    \
+	return FALSE;                         \
+} while(0)
+#endif
+
+#define NOUVEAU_ALIGN(x,bytes) (((x) + ((bytes) - 1)) & ~((bytes) - 1))
 
 #endif /* __NV_STRUCT_H__ */

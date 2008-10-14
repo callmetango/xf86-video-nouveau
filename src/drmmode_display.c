@@ -36,6 +36,12 @@
 #include "sarea.h"
 #include "X11/Xatom.h"
 
+static uint64_t
+nouveau_bo_get_drm_map(struct nouveau_bo *bo)
+{
+	return 0xdeadbeef;
+}
+
 #if 0
 /* not using for the moment */
 uint32_t drmmode_create_new_fb(ScrnInfoPtr pScrn, int width, int height, int *pitch)

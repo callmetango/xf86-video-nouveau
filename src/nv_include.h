@@ -79,5 +79,6 @@
 
 #include "nouveau_device.h"
 #include "nouveau_drmif.h"
+#include "nouveau_pushbuf.h"
 
 #endif /* __NV_INCLUDE_H__ */

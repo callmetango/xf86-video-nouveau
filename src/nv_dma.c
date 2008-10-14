@@ -30,7 +30,6 @@ void NVSync(ScrnInfoPtr pScrn)
 	NVPtr pNv = NVPTR(pScrn);
 	struct nouveau_channel *chan = pNv->chan;
 	struct nouveau_grobj *gr = pNv->Nv2D ? pNv->Nv2D : pNv->NvImageBlit;
-	int timeout = 2000;
 
 	if (pNv->NoAccel)
 		return;
@@ -44,7 +43,7 @@ void NVSync(ScrnInfoPtr pScrn)
 	FIRE_RING (chan);
 	if (nouveau_notifier_wait_status(pNv->notify0, 0,
 					 NV_NOTIFY_STATE_STATUS_COMPLETED,
-					 timeout)) {
+					 2.0)) {
 		if (!pNv->LockedUp) {
 			pNv->LockedUp = TRUE;
 			FatalError("GPU hang\n");
