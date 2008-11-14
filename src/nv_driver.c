@@ -1951,6 +1951,7 @@ NVScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 	/* First init DRI/DRM */
 	if (!NVDRIScreenInit(pScrn))
 		return FALSE;
+	nouveau_dri2_init(pScreen);
 
 	/* Allocate and map memory areas we need */
 	if (!NVMapMem(pScrn))

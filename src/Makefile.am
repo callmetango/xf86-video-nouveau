@@ -29,6 +29,7 @@ nouveau_drv_la_LDFLAGS = -module -avoid-version @LIBNOUVEAU_DRM_LIBS@
 nouveau_drv_ladir = @moduledir@/drivers
 
 nouveau_drv_la_SOURCES = \
+			 nouveau_dri2.c \
 			 nouveau_xv.c \
 			 nv_accel_common.c \
 			 nv_bios.c \
