@@ -2053,9 +2053,7 @@ NVScreenInit(int scrnIndex, ScreenPtr pScreen, int argc, char **argv)
 	} else {
 		pNv->ShadowPtr = NULL;
 		displayWidth = pScrn->displayWidth;
-		nouveau_bo_map(pNv->FB, NOUVEAU_BO_RDWR);
-		FBStart = pNv->FB->map;
-		nouveau_bo_unmap(pNv->FB);
+		FBStart = pNv->FBMap;
 	}
 
 	switch (pScrn->bitsPerPixel) {
