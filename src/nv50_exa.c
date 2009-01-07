@@ -252,7 +252,6 @@ NV50EXASolid(PixmapPtr pdpix, int x1, int y1, int x2, int y2)
 	NV50EXA_LOCALS(pdpix);
 
 	RING_SPACE(chan, 7);
-
 	BEGIN_RING(chan, eng2d, NV50_2D_RECT_X1, 4);
 	OUT_RING  (chan, x1);
 	OUT_RING  (chan, y1);
@@ -271,6 +270,15 @@ NV50EXADoneSolid(PixmapPtr pdpix)
 	chan->flush_notify = NULL;
 }
 
+static void
+NV50EXAStateCopyReEmit(struct nouveau_channel *chan)
+{
+	NVPtr pNv = chan->user_private;
+
+	NV50EXAPrepareCopy(pNv->src_pixmap, pNv->dst_pixmap, 0, 0,
+			   pNv->composite_op, pNv->planemask);
+}
+
 Bool
 NV50EXAPrepareCopy(PixmapPtr pspix, PixmapPtr pdpix, int dx, int dy,
 		   int alu, Pixel planemask)
@@ -279,12 +287,19 @@ NV50EXAPrepareCopy(PixmapPtr pspix, PixmapPtr pdpix, int dx, int dy,
 
 	planemask |= ~0 << pScrn->depth;
 
+	RING_SPACE(chan, 64);
+
 	if (!NV50EXAAcquireSurface2D(pspix, 1))
 		NOUVEAU_FALLBACK("src pixmap\n");
 	if (!NV50EXAAcquireSurface2D(pdpix, 0))
 		NOUVEAU_FALLBACK("dest pixmap\n");
 	NV50EXASetROP(pdpix, alu, planemask);
 
+	chan->flush_notify = NV50EXAStateCopyReEmit;
+	pNv->src_pixmap = pspix;
+	pNv->dst_pixmap = pdpix;
+	pNv->composite_op = alu;
+	pNv->planemask = planemask;
 	return TRUE;
 }
 
@@ -295,6 +310,7 @@ NV50EXACopy(PixmapPtr pdpix, int srcX , int srcY,
 {
 	NV50EXA_LOCALS(pdpix);
 
+	RING_SPACE(chan, 19);
 	BEGIN_RING(chan, eng2d, 0x0110, 1);
 	OUT_RING  (chan, 0);
 	BEGIN_RING(chan, eng2d, 0x088c, 1);
@@ -320,6 +336,9 @@ NV50EXACopy(PixmapPtr pdpix, int srcX , int srcY,
 void
 NV50EXADoneCopy(PixmapPtr pdpix)
 {
+	NV50EXA_LOCALS(pdpix);
+
+	chan->flush_notify = NULL;
 }
 
 Bool
