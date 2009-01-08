@@ -761,6 +761,15 @@ struct output_name output_names[] = {
 	{ "VGA", 0 },
 	{ "DVI-I", 0 },
 	{ "DVI-D", 0 },
+	{ "DVI-A", 0 },
+	{ "Composite", 0 },
+	{ "SVIDEO", 0 },
+	{ "LVDS", 0 },
+	{ "Component", 0 },
+	{ "DIN", 0 },
+	{ "DisplayPort", 0 },
+	{ "HDMI-A", 0 },
+	{ "HDMI-B", 0 },
 };
 
 static void
