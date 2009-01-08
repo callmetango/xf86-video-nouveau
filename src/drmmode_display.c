@@ -211,9 +211,13 @@ drmmode_set_mode_major(xf86CrtcPtr crtc, DisplayModePtr mode,
 		output_count++;
 	}
 
-	if (!xf86CrtcRotate(crtc, mode, rotation)) {
+#if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1,5,99,0,0)
+	if (!xf86CrtcRotate(crtc, mode, rotation))
+#else
+	if (!xf86CrtcRotate(crtc))
+#endif
 		goto done;
-	}
+
 
 	drmmode_ConvertToKMode(crtc->scrn, &kmode, mode);
 
