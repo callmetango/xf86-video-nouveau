@@ -41,10 +41,6 @@ NVC0AccelDownloadM2MF(PixmapPtr pspix, int x, int y, int w, int h,
 	const int line_limit = (128 << 10) / line_len;
 	unsigned src_offset = 0, src_pitch = 0, tiled = 1;
 
-	xf86DrvMsg(pScrn->scrnIndex, X_INFO,
-		   "NVC0AccelDownloadM2MF: %i.%i %ix%i\n",
-		   x, y, w, h);
-
 	if (!nv50_style_tiled_pixmap(pspix)) {
 		tiled = 0;
 		src_pitch = exaGetPixmapPitch(pspix);
@@ -129,10 +125,6 @@ NVC0AccelUploadM2MF(PixmapPtr pdpix, int x, int y, int w, int h,
 	int line_len = w * cpp;
 	int line_limit = (128 << 10) / line_len;
 	unsigned dst_offset = 0, dst_pitch = 0, tiled = 1;
-
-	xf86DrvMsg(pScrn->scrnIndex, X_INFO,
-		   "NVC0AccelUploadM2MF: %i.%i %ix%i\n",
-		   x, y, w, h);
 
 	if (!nv50_style_tiled_pixmap(pdpix)) {
 		tiled = 0;
@@ -278,9 +270,6 @@ static void NVC0EXASetClip(PixmapPtr ppix, int x, int y, int w, int h)
 {
 	NVC0EXA_LOCALS(ppix);
 
-	xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EXASetClip: %i.%i %ix%i\n",
-		   x, y, w, h);
-
 	BEGIN_RING(chan, NvSub2D, NV50_2D_CLIP_X, 4);
 	OUT_RING  (chan, x);
 	OUT_RING  (chan, y);
@@ -301,11 +290,6 @@ NVC0EXAAcquireSurface2D(PixmapPtr ppix, int is_src)
 
 	bo_flags  = NOUVEAU_BO_VRAM;
 	bo_flags |= is_src ? NOUVEAU_BO_RD : NOUVEAU_BO_WR;
-
-	xf86DrvMsg(pScrn->scrnIndex, X_INFO,
-		   "EXAAcquSurf2D: is_src=%i, tile_flags=%x, size=%ix%i\n",
-		   is_src, bo->tile_flags,
-		   ppix->drawable.width, ppix->drawable.height);
 
 	if (!nv50_style_tiled_pixmap(ppix)) {
 		BEGIN_RING(chan, NvSub2D, mthd, 2);
@@ -340,10 +324,6 @@ NVC0EXASetPattern(PixmapPtr pdpix, int col0, int col1, int pat0, int pat1)
 {
 	NVC0EXA_LOCALS(pdpix);
 
-	xf86DrvMsg(pScrn->scrnIndex, X_INFO,
-		   "EXASetPattern: %i %i, %i %i\n",
-		   col0, col1, pat0, pat1);
-
 	BEGIN_RING(chan, NvSub2D, NV50_2D_PATTERN_COLOR(0), 4);
 	OUT_RING  (chan, col0);
 	OUT_RING  (chan, col1);
@@ -361,8 +341,6 @@ NVC0EXASetROP(PixmapPtr pdpix, int alu, Pixel planemask)
 		rop = NVROP[alu].copy_planemask;
 	else
 		rop = NVROP[alu].copy;
-
-	xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EXASetROP\n");
 
 	BEGIN_RING(chan, NvSub2D, NV50_2D_OPERATION, 1);
 	if (alu == GXcopy && EXA_PM_IS_SOLID(&pdpix->drawable, planemask)) {
@@ -439,8 +417,6 @@ NVC0EXAPrepareSolid(PixmapPtr pdpix, int alu, Pixel planemask, Pixel fg)
 	OUT_RING  (chan, fmt);
 	OUT_RING  (chan, fg);
 
-	xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EXAPrepareSolid: fmt %x\n", fmt);
-
 	pNv->pdpix = pdpix;
 	pNv->alu = alu;
 	pNv->planemask = planemask;
@@ -453,8 +429,6 @@ void
 NVC0EXASolid(PixmapPtr pdpix, int x1, int y1, int x2, int y2)
 {
 	NVC0EXA_LOCALS(pdpix);
-
-	xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EXASolid: %i %i %i %i\n", x1, y1, x2, y2);
 
 	WAIT_RING (chan, 5);
 	BEGIN_RING(chan, NvSub2D, NV50_2D_DRAW_POINT32_X(0), 4);
@@ -504,8 +478,6 @@ NVC0EXAPrepareCopy(PixmapPtr pspix, PixmapPtr pdpix, int dx, int dy,
 		NOUVEAU_FALLBACK("dest pixmap\n");
 	}
 
-	xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EXAPrepareCopy");
-
 	NVC0EXASetROP(pdpix, alu, planemask);
 
 	pNv->pspix = pspix;
@@ -522,9 +494,6 @@ NVC0EXACopy(PixmapPtr pdpix, int srcX , int srcY,
 			     int width, int height)
 {
 	NVC0EXA_LOCALS(pdpix);
-
-	xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EXACopy: %i.%i -> %i.%i, %ix%i\n",
-		   srcX, srcY, dstX, dstY, width, height);
 
 	WAIT_RING (chan, 17);
 	BEGIN_RING(chan, NvSub2D, NV50_2D_SERIALIZE, 1);
@@ -588,8 +557,6 @@ NVC0EXAUploadSIFC(const char *src, int src_pitch,
 		MARK_UNDO(chan);
 		NOUVEAU_FALLBACK("dest pixmap\n");
 	}
-
-	xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EXAUploadSIFC\n");
 
 	/* If the pitch isn't aligned to a dword you can
 	 * get corruption at the end of a line.
@@ -677,8 +644,6 @@ NVC0EXARenderTarget(PixmapPtr ppix, PicturePtr ppict)
 	/*XXX: Scanout buffer not tiled, someone needs to figure it out */
 	if (!nv50_style_tiled_pixmap(ppix))
 		NOUVEAU_FALLBACK("pixmap is scanout buffer\n");
-
-	xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EXARenderTarget\n");
 
 	switch (ppict->format) {
 	case PICT_a8r8g8b8: format = NVC0TCL_RT_FORMAT_A8R8G8B8_UNORM; break;
@@ -792,8 +757,6 @@ NVC0EXATexture(PixmapPtr ppix, PicturePtr ppict, unsigned unit)
 	/* XXX: maybe add support for linear textures at some point */
 	if (!nv50_style_tiled_pixmap(ppix))
 		NOUVEAU_FALLBACK("pixmap is scanout buffer\n");
-
-	xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EXATexture\n");
 
 	BEGIN_RING(chan, NvSub3D, NVC0TCL_TIC_ADDRESS_HIGH, 3);
 	if (OUT_RELOCh(chan, pNv->tesla_scratch, TIC_OFFSET, tcb_flags) ||
@@ -979,8 +942,6 @@ NVC0EXABlend(PixmapPtr ppix, PicturePtr ppict, int op, int component_alpha)
 	unsigned sblend = b->src_blend;
 	unsigned dblend = b->dst_blend;
 
-	xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EXABlend\n");
-
 	if (b->dst_alpha) {
 		if (!PICT_FORMAT_A(ppict->format)) {
 			if (sblend == BF(DST_ALPHA))
@@ -1029,8 +990,6 @@ NVC0EXACheckComposite(int op,
 	if (!NVC0EXACheckTexture(pspict, pdpict, op))
 		NOUVEAU_FALLBACK("src picture invalid\n");
 
-	ErrorF("EXACheckComposite\n");
-
 	if (pmpict) {
 		if (pmpict->componentAlpha &&
 		    PICT_FORMAT_RGB(pmpict->format) &&
@@ -1071,8 +1030,6 @@ NVC0EXAPrepareComposite(int op,
 	if (pmpict || op != 12)
 		NOUVEAU_FALLBACK("comp-alpha");
 	*/
-
-	xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EXAPrepareComposite\n");
 
 	BEGIN_RING(chan, NvSub2D, NV50_2D_SERIALIZE, 1);
 	OUT_RING  (chan, 0);
@@ -1183,8 +1140,6 @@ NVC0EXAComposite(PixmapPtr pdpix,
 {
 	NVC0EXA_LOCALS(pdpix);
 	float sX0, sX1, sX2, sY0, sY1, sY2;
-
-	xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EXAComposite\n");
 
 	WAIT_RING (chan, 64);
 	BEGIN_RING(chan, NvSub3D, NVC0TCL_SCISSOR_HORIZ(0), 2);
