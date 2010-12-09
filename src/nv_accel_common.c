@@ -614,7 +614,8 @@ NVAccelCommonInit(ScrnInfoPtr pScrn)
 	xf86DrvMsg(pScrn->scrnIndex, X_INFO, "NVAccelCommonInit\n");
 
 	/* General engine objects */
-	INIT_CONTEXT_OBJECT(DmaNotifier0);
+	if (pNv->Architecture < NV_ARCH_C0)
+		INIT_CONTEXT_OBJECT(DmaNotifier0);
 
 	/* 2D engine */
 	if (pNv->Architecture < NV_ARCH_50) {
@@ -675,27 +676,20 @@ void NVAccelFree(ScrnInfoPtr pScrn)
 	nouveau_notifier_free(&pNv->notify0);
 	nouveau_notifier_free(&pNv->vblank_sem);
 
-	if (pNv->Architecture < NV_ARCH_50) {
-		nouveau_grobj_free(&pNv->NvContextSurfaces);
-		nouveau_grobj_free(&pNv->NvContextBeta1);
-		nouveau_grobj_free(&pNv->NvContextBeta4);
-		nouveau_grobj_free(&pNv->NvImagePattern);
-		nouveau_grobj_free(&pNv->NvRop);
-		nouveau_grobj_free(&pNv->NvRectangle);
-		nouveau_grobj_free(&pNv->NvImageBlit);
-		nouveau_grobj_free(&pNv->NvScaledImage);
-		nouveau_grobj_free(&pNv->NvClipRectangle);
-		nouveau_grobj_free(&pNv->NvImageFromCpu);
-	} else
-	if (pNv->Architecture < NV_ARCH_C0)
-		nouveau_grobj_free(&pNv->Nv2D);
-
-	if (pNv->Architecture < NV_ARCH_C0) {
-		nouveau_grobj_free(&pNv->NvMemFormat);
-
-		nouveau_grobj_free(&pNv->NvSW);
-		nouveau_grobj_free(&pNv->Nv3D);
-	}
+	nouveau_grobj_free(&pNv->NvContextSurfaces);
+	nouveau_grobj_free(&pNv->NvContextBeta1);
+	nouveau_grobj_free(&pNv->NvContextBeta4);
+	nouveau_grobj_free(&pNv->NvImagePattern);
+	nouveau_grobj_free(&pNv->NvRop);
+	nouveau_grobj_free(&pNv->NvRectangle);
+	nouveau_grobj_free(&pNv->NvImageBlit);
+	nouveau_grobj_free(&pNv->NvScaledImage);
+	nouveau_grobj_free(&pNv->NvClipRectangle);
+	nouveau_grobj_free(&pNv->NvImageFromCpu);
+	nouveau_grobj_free(&pNv->Nv2D);
+	nouveau_grobj_free(&pNv->NvMemFormat);
+	nouveau_grobj_free(&pNv->NvSW);
+	nouveau_grobj_free(&pNv->Nv3D);
 
 	nouveau_bo_ref(NULL, &pNv->tesla_scratch);
 	nouveau_bo_ref(NULL, &pNv->shader_mem);
