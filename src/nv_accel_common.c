@@ -42,22 +42,23 @@ nouveau_allocate_surface(ScrnInfoPtr scrn, int width, int height, int bpp,
 	if (tiled) {
 		if (pNv->Architecture >= NV_ARCH_C0) {
 			if (height > 64)
-				tile_mode = 4;
+				tile_mode = 0x40;
 			else if (height > 32)
-				tile_mode = 3;
+				tile_mode = 0x30;
 			else if (height > 16)
-				tile_mode = 2;
+				tile_mode = 0x20;
 			else if (height > 8)
-				tile_mode = 1;
+				tile_mode = 0x10;
 			else
-				tile_mode = 0;
+				tile_mode = 0x00;
 
 			if (usage_hint & NOUVEAU_CREATE_PIXMAP_ZETA)
 				tile_flags = 0x1100; /* S8Z24 */
 			else
 				tile_flags = 0xfe00;
 
-			height = NOUVEAU_ALIGN(height, 1 << (tile_mode + 3));
+			height = NOUVEAU_ALIGN(
+				height, NVC0_TILE_HEIGHT(tile_mode));
 		} else if (pNv->Architecture >= NV_ARCH_50) {
 			if (height > 32)
 				tile_mode = 4;

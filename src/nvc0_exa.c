@@ -47,7 +47,7 @@ NVC0AccelDownloadM2MF(PixmapPtr pspix, int x, int y, int w, int h,
 		src_offset = (y * src_pitch) + (x * cpp);
 	} else {
 		BEGIN_RING(chan, NvSubM2MF, NVC0_M2MF_TILING_MODE_IN, 5);
-		OUT_RING  (chan, bo->tile_mode << 4);
+		OUT_RING  (chan, bo->tile_mode);
 		OUT_RING  (chan, pspix->drawable.width * cpp);
 		OUT_RING  (chan, pspix->drawable.height);
 		OUT_RING  (chan, 1);
@@ -132,7 +132,7 @@ NVC0AccelUploadM2MF(PixmapPtr pdpix, int x, int y, int w, int h,
 		dst_offset = (y * dst_pitch) + (x * cpp);
 	} else {
 		BEGIN_RING(chan, NvSubM2MF, NVC0_M2MF_TILING_MODE_OUT, 5);
-		OUT_RING  (chan, bo->tile_mode << 4);
+		OUT_RING  (chan, bo->tile_mode);
 		OUT_RING  (chan, pdpix->drawable.width * cpp);
 		OUT_RING  (chan, pdpix->drawable.height);
 		OUT_RING  (chan, 1);
@@ -301,7 +301,7 @@ NVC0EXAAcquireSurface2D(PixmapPtr ppix, int is_src)
 		BEGIN_RING(chan, NvSub2D, mthd, 5);
 		OUT_RING  (chan, fmt);
 		OUT_RING  (chan, 0);
-		OUT_RING  (chan, bo->tile_mode << 4);
+		OUT_RING  (chan, bo->tile_mode);
 		OUT_RING  (chan, 1);
 		OUT_RING  (chan, 0);
 	}
@@ -672,7 +672,7 @@ NVC0EXARenderTarget(PixmapPtr ppix, PicturePtr ppict)
 	OUT_RING  (chan, ppix->drawable.width);
 	OUT_RING  (chan, ppix->drawable.height);
 	OUT_RING  (chan, format);
-	OUT_RING  (chan, bo->tile_mode << 4);
+	OUT_RING  (chan, bo->tile_mode);
 	OUT_RING  (chan, 0x00000001);
 	OUT_RING  (chan, 0x00000000);
 
@@ -846,7 +846,7 @@ NVC0EXATexture(PixmapPtr ppix, PicturePtr ppict, unsigned unit)
 	}
 #undef _
 
-	mode = 0xd0005000 | (bo->tile_mode << 22);
+	mode = 0xd0005000 | (bo->tile_mode << (22 - 4));
 	if (OUT_RELOCl(chan, bo, 0, NOUVEAU_BO_VRAM | NOUVEAU_BO_RD) ||
 	    OUT_RELOCd(chan, bo, 0, NOUVEAU_BO_VRAM | NOUVEAU_BO_RD |
 		       NOUVEAU_BO_HIGH | NOUVEAU_BO_OR, mode, mode))
